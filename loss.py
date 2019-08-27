@@ -1,9 +1,22 @@
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import torch.utils.data as data
+from torchvision import models
+import torch.nn.functional as F
+import cv2
+import os
+from functools import partial
+from time import time
+import numpy as np
+from torch.autograd import Variable as V
+
 class dice_bce_loss(nn.Module):
     def __init__(self, batch=True):
-        super().__init__()
+        super(dice_bce_loss, self).__init__()
         self.batch = batch
         self.bce_loss = nn.BCELoss()
-        
+
     def soft_dice_coeff(self, y_true, y_pred):
         smooth = 0.0  # may change
         if self.batch:
@@ -21,15 +34,8 @@ class dice_bce_loss(nn.Module):
     def soft_dice_loss(self, y_true, y_pred):
         loss = 1 - self.soft_dice_coeff(y_true, y_pred)
         return loss
-        
+
     def __call__(self, y_true, y_pred):
         a =  self.bce_loss(y_pred, y_true)
         b =  self.soft_dice_loss(y_true, y_pred)
         return a + b
-
-def jaccard_acc(outputs, labels):
-    outputs = outputs.int()
-    labels = labels.int()
-    union = (outputs | outputs) | (labels | labels)
-    intersection = (outputs | outputs) & (labels | labels)
-    return intersection.float().sum() / union.float().sum()

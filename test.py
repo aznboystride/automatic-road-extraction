@@ -1,48 +1,65 @@
-def test_threshold(network, image_path, label_path):
-    image = cv2.imread(image_path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = image / 255.0 
-    image = np.expand_dims(image, axis=0)
-    image = image.transpose(0, 3, 1, 2)
-    image = torch.from_numpy(image).float()
-    pred = network(image)
-    pred = pred.squeeze(0).squeeze(0)
-    pred1 = (pred > 0.5).cpu().float().numpy() * 255
-    pred2 = (pred > 0.4).cpu().float().numpy() * 255
-    pred3 = (pred > 0.3).cpu().float().numpy() * 255
-    pred4 = (pred > 0.2).cpu().float().numpy() * 255
-    pred5 = (pred > 0.1).cpu().float().numpy() * 255
-    label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
-    label = (label >= 128) * 255
-    
-    a1 = jaccard_acc(torch.from_numpy(pred1), torch.from_numpy(label))
-    a2 = jaccard_acc(torch.from_numpy(pred2), torch.from_numpy(label))
-    a3 = jaccard_acc(torch.from_numpy(pred3), torch.from_numpy(label))
-    a4 = jaccard_acc(torch.from_numpy(pred4), torch.from_numpy(label))
-    a5 = jaccard_acc(torch.from_numpy(pred5), torch.from_numpy(label))
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import torch.utils.data as data
+from torchvision import models
+import torch.nn.functional as F
+import cv2
+import os
+import sys
+from functools import partial
+from time import time
+import numpy as np
+from torch.autograd import Variable as V
+from networks.unet34 import UNet34
+from networks.dinknet34 import DinkNet34
+from networks.dinkducnet34 import DinkDUCNet34
+from testframe import TTAFrame
 
+import argparse
 
-def test(network, root_in, root_out, t):
-    dir_list = os.listdir(root_in)
-    if not os.path.isdir(root_out):
-        os.mkdir(root_out)
-    network.eval()
-    a1 = a2 = a3 = a4 = a5 = 0.0
-    with torch.no_grad():
-        for count, filename in enumerate(dir_list,1):
-            if filename.endswith('png'):
-                continue
-            path_in = os.path.join(root_in, filename)
-            image = cv2.cvtColor(cv2.imread(path_in), cv2.COLOR_BGR2RGB)
-            a,b,c,d,e = test_threshold(network, path_in, os.path.join(root_in, filename.split('_')[0] + "_mask.png"))
-            a1 += a
-            a2 += b
-            a3 += c
-            a4 += d
-            a5 += e
-            
-            if count % 20 == 0:
-                print("finished ({}/{})".format(count, len(dir_list)))
-                
-        l = len(dir_list)
-        print("a1 = {}\ta2 = {}\ta3 = {}\ta4 = {}\ta5 = {}".format(a1/l,a2/l,a3/l,a4/l,a5/l))
+parser = argparse.ArgumentParser(description='Tester')
+
+parser.add_argument('-b', '--batchsize', type=int, metavar='', required=True, help='Batch size')
+
+parser.add_argument('-s', '--save', type=str, metavar='', required=True, help='Save folder name')
+
+parser.add_argument('-w', '--weight', type=str, metavar='', required=False, help='Weights file path')
+
+parser.add_argument('-d', '--data', type=str, metavar='', required=True, help='Path to data test folder')
+
+parser.add_argument('-i', '--idevices', type=str, metavar='', required=True, help='Device ids')
+
+parser.add_argument("network", required=True, type=str, help='unet34, dinknet34, dinkducnet34')
+
+arguments = parser.parse_args()
+
+dirs = ('submits', 'weights', 'logs')
+
+for dir in dirs:
+    if not os.path.isdir(dir):
+        os.mkdir(dir)
+
+available_nets = ("unet34", "dinknet34", "dinkducnet34")
+
+if arguments.network not in available_nets:
+    raise Exception("You must specify network name")
+
+#source = 'dataset/test/'
+source = arguments.data
+val = os.listdir(source)
+solver = TTAFrame(, arguments.idevices, arguments.batchsize)
+solver.load(arguments.weight)
+tic = time()
+target = 'submits/{}'.format(arguments.save)
+
+if not os.path.isdir(target) : os.mkdir(target)
+for i,name in enumerate(val):
+    if i%10 == 0:
+        print(i/10, '    ','%.2f'%(time()-tic))
+
+    mask = solver.test_one_img_from_path(source+name)
+    mask[mask>4.0] = 255
+    mask[mask<=4.0] = 0
+    mask = np.concatenate([mask[:,:,None],mask[:,:,None],mask[:,:,None]],axis=2)
+    cv2.imwrite(target+name[:-7]+'mask.png',mask.astype(np.uint8))
