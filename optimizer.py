@@ -12,10 +12,12 @@ import numpy as np
 from torch.autograd import Variable as V
 
 class MyFrame():
-    def __init__(self, net, loss, device_ids, lr, evalmode = False):
+    def __init__(self, net, loss, device_ids, lr, evalmode = False, optimizer=None):
         self.net = net().cuda()
         self.net = torch.nn.DataParallel(self.net, device_ids=device_ids)
         self.optimizer = torch.optim.Adam(params=self.net.parameters(), lr=lr)
+        if optimizer != None:
+            self.optimizer.load_state_dict(torch.load(optimizer))
         #self.optimizer = torch.optim.RMSprop(params=self.net.parameters(), lr=lr)
         self.loss = loss()
         self.old_lr = lr

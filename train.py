@@ -10,11 +10,16 @@ import sys
 from functools import partial
 from time import time
 import numpy as np
+from loss import dice_bce_loss
+from augmentations import *
 from torch.autograd import Variable as V
 from networks.unet34 import UNet34
 from networks.dinknet34 import DinkNet34
-from networks.dinkducnet34 import DinkDUCNet34
+from networks.hdcducnet34 import ResNetDUCHDC
+from networks.dinkhdcduc34 import DinkNetHDC
 from optimizer import MyFrame
+from pytz import timezone
+from datetime import datetime
 import argparse
 
 parser = argparse.ArgumentParser(description='Trainer')
@@ -29,11 +34,13 @@ parser.add_argument('-s', '--save', type=str, metavar='', required=True, help='S
 
 parser.add_argument('-w', '--weight', type=str, metavar='', required=False, help='Weights file path')
 
+parser.add_argument('-o', '--optimizer', type=str, metavar='', required=False, help='Optimizer file path')
+
 parser.add_argument('-t', '--train', type=str, metavar='', required=True, help='Path to data train folder')
 
 parser.add_argument('-i', '--idevices', type=str, metavar='', required=True, help='Device ids')
 
-parser.add_argument("network", type=str, help='unet34, dinknet34, dinkducnet34')
+parser.add_argument("network", type=str, nargs=1, help='unet34, dinknet34, dinkducnet34')
 
 arguments = parser.parse_args()
 
@@ -43,10 +50,11 @@ for dir in dirs:
     if not os.path.isdir(dir):
         os.mkdir(dir)
 
-available_nets = ("unet34", "dinknet34", "dinkducnet34")
+available_nets = ("unet", "dinknet", "hdcducnet", "dinkhdcnet")
 
-if arguments.network not in available_nets:
-    raise Exception("You must specify network name")
+assert sys.argv[-1].lower() in available_nets
+
+
 SHAPE = (1024,1024)
 ROOT = arguments.train if arguments.train.endswith('/') else arguments.train + '/'
 imagelist = list(filter(lambda x: x.find('sat')!=-1, os.listdir(ROOT)))
@@ -55,9 +63,11 @@ NAME = arguments.save
 BATCHSIZE_PER_CARD = arguments.batchsize
 
 ids = [int(x) for x in arguments.idevices.split(',')]
-print(ids)
 
-solver = MyFrame(UNet34 if sys.argv[-1].lower() == 'unet34' else DinkNet34 if sys.argv[-1].lower() == 'dinknet34' else DinkDUCNet34, dice_bce_loss, ids, arguments.lr)
+torch.cuda.set_device(ids[0])
+
+solver = MyFrame(UNet34 if sys.argv[-1].lower() == 'unet' else DinkNet34 if sys.argv[-1].lower() == 'dinknet' else ResNetDUCHDC if sys.argv[-1].lower() == 'hdcducnet'\
+        else DinkNetHDC, dice_bce_loss, ids, arguments.lr, arguments.optimizer)
 if arguments.weight != None:
     solver.load(arguments.weight)
 batchsize = len(ids) * BATCHSIZE_PER_CARD
@@ -79,14 +89,15 @@ for epoch in range(1, total_epoch + 1):
         solver.set_input(img, mask)
         train_loss = solver.optimize()
         train_epoch_loss += train_loss
-        print("loss = {}".format(train_epoch_loss / count))
+        if count % 30 == 0:
+            print("\tbatch ({}/{}) loss = {}".format(count, len(data_loader_iter), train_epoch_loss / count))
         count += 1
     train_epoch_loss /= len(data_loader_iter)
-    print('********', file=mylog)
+    print('********\t{}'.format(datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")), file=mylog)
     print('epoch:',epoch,'    time:',int(time()-tic), file=mylog)
     print('train_loss:',train_epoch_loss, file=mylog)
     print('SHAPE:',SHAPE, file=mylog)
-    print('********')
+    print('********\t{}'.format(datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     print('epoch:',epoch,'    time:',int(time()-tic))
     print('train_loss:',train_epoch_loss)
     print('SHAPE:',SHAPE)

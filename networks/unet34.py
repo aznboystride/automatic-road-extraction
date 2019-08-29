@@ -20,7 +20,6 @@ class UNet34(nn.Module):
         decoder_inputs = [512, 512+256, 256+256, 256+128, 64+64,128]
         decoder_outputs= [256, 256,256, 64, 128, 32]
 
-        self.pool = nn.MaxPool2d(2,2)
         self.conv1 = resnet.conv1
         self.bn1 = resnet.bn1
         self.relu = resnet.relu

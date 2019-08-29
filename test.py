@@ -26,11 +26,11 @@ parser.add_argument('-s', '--save', type=str, metavar='', required=True, help='S
 
 parser.add_argument('-w', '--weight', type=str, metavar='', required=False, help='Weights file path')
 
-parser.add_argument('-d', '--data', type=str, metavar='', required=True, help='Path to data test folder')
+parser.add_argument('-t', '--test', type=str, metavar='', required=True, help='Path to data test folder')
 
 parser.add_argument('-i', '--idevices', type=str, metavar='', required=True, help='Device ids')
 
-parser.add_argument("network", required=True, type=str, help='unet34, dinknet34, dinkducnet34')
+parser.add_argument("network", type=str, nargs=1, help='unet34, dinknet34, dinkducnet34')
 
 arguments = parser.parse_args()
 
@@ -42,13 +42,12 @@ for dir in dirs:
 
 available_nets = ("unet34", "dinknet34", "dinkducnet34")
 
-if arguments.network not in available_nets:
-    raise Exception("You must specify network name")
+assert sys.argv[-1].lower() in available_nets
 
 #source = 'dataset/test/'
 source = arguments.data
 val = os.listdir(source)
-solver = TTAFrame(, arguments.idevices, arguments.batchsize)
+solver = TTAFrame(UNet34 if sys.argv[-1].lower() == 'unet34' else DinkNet34 if sys.argv[-1].lower() == 'dinknet34' else DinkDUCNet34, arguments.idevices, arguments.batchsize)
 solver.load(arguments.weight)
 tic = time()
 target = 'submits/{}'.format(arguments.save)
