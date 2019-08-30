@@ -13,7 +13,7 @@ from torch.autograd import Variable as V
 
 class TTAFrame():
     def __init__(self, net, device_ids, batchsize):
-        self.batchsize = batchsize
+        self.batchsize = len(device_ids) * batchsize
         self.net = net().cuda()
         self.net = torch.nn.DataParallel(self.net, device_ids=device_ids)
 

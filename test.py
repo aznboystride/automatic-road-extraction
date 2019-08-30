@@ -13,7 +13,8 @@ import numpy as np
 from torch.autograd import Variable as V
 from networks.unet34 import UNet34
 from networks.dinknet34 import DinkNet34
-from networks.dinkducnet34 import DinkDUCNet34
+from networks.hdcducnet34 import ResNetDUCHDC
+from networks.dinkhdcduc34 import DinkNetHDC
 from testframe import TTAFrame
 
 import argparse
@@ -40,17 +41,20 @@ for dir in dirs:
     if not os.path.isdir(dir):
         os.mkdir(dir)
 
-available_nets = ("unet34", "dinknet34", "dinkducnet34")
+available_nets = ("unet", "dinknet", "hdcducnet", "dinkhdcnet")
 
 assert sys.argv[-1].lower() in available_nets
 
+ids = [int(x) for x in arguments.idevices.split(',')]
+torch.cuda.set_device(ids[0])
 #source = 'dataset/test/'
-source = arguments.data
+source = arguments.test
 val = os.listdir(source)
-solver = TTAFrame(UNet34 if sys.argv[-1].lower() == 'unet34' else DinkNet34 if sys.argv[-1].lower() == 'dinknet34' else DinkDUCNet34, arguments.idevices, arguments.batchsize)
+solver = TTAFrame(UNet34 if sys.argv[-1].lower() == 'unet' else DinkNet34 if sys.argv[-1].lower() == 'dinknet' else ResNetDUCHDC if sys.argv[-1].lower() == 'hdcducnet'\
+        else DinkNetHDC, ids, arguments.batchsize)
 solver.load(arguments.weight)
 tic = time()
-target = 'submits/{}'.format(arguments.save)
+target = 'submits/{}'.format(arguments.save) if arguments.save.endswith('/') else 'submits/{}/'.format(arguments.save)
 
 if not os.path.isdir(target) : os.mkdir(target)
 for i,name in enumerate(val):
