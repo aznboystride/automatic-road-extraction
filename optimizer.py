@@ -11,7 +11,7 @@ from time import time
 import numpy as np
 from torch.autograd import Variable as V
 
-class MyFrame():
+class Optimizer():
     def __init__(self, net, loss, device_ids, lr, evalmode = False, optimizer=None):
         self.net = net().cuda()
         self.net = torch.nn.DataParallel(self.net, device_ids=device_ids)

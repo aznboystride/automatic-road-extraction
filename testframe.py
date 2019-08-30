@@ -11,7 +11,7 @@ from time import time
 import numpy as np
 from torch.autograd import Variable as V
 
-class TTAFrame():
+class TTA():
     def __init__(self, net, device_ids, batchsize):
         self.batchsize = len(device_ids) * batchsize
         self.net = net().cuda()

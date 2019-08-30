@@ -17,7 +17,7 @@ from networks.unet34 import UNet34
 from networks.dinknet34 import DinkNet34
 from networks.hdcducnet34 import ResNetDUCHDC
 from networks.dinkhdcduc34 import DinkNetHDC
-from optimizer import MyFrame
+from optimizer import Optimizer
 from pytz import timezone
 from datetime import datetime
 import argparse
@@ -66,7 +66,7 @@ ids = [int(x) for x in arguments.idevices.split(',')]
 
 torch.cuda.set_device(ids[0])
 
-solver = MyFrame(UNet34 if sys.argv[-1].lower() == 'unet' else DinkNet34 if sys.argv[-1].lower() == 'dinknet' else ResNetDUCHDC if sys.argv[-1].lower() == 'hdcducnet'\
+solver = Optimizer(UNet34 if sys.argv[-1].lower() == 'unet' else DinkNet34 if sys.argv[-1].lower() == 'dinknet' else ResNetDUCHDC if sys.argv[-1].lower() == 'hdcducnet'\
         else DinkNetHDC, dice_bce_loss, ids, arguments.lr, arguments.optimizer)
 if arguments.weight != None:
     solver.load(arguments.weight)
