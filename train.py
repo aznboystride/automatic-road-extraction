@@ -13,10 +13,9 @@ import numpy as np
 from loss import dice_bce_loss
 from augmentations import *
 from torch.autograd import Variable as V
-from networks.unet34 import UNet34
-from networks.dinknet34 import DinkNet34
-from networks.hdcducnet34 import ResNetDUCHDC
-from networks.dinkhdcduc34 import DinkNetHDC
+from networks.unet import UNet34
+from networks.dinknet import DinkNet34
+from networks.hdcducnet import ResNetDUCHDC34, ResNetDUC34, DinkNetHDC18
 from optimizer import Optimizer
 from pytz import timezone
 from datetime import datetime
@@ -24,21 +23,21 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Trainer')
 
-parser.add_argument('-l', '--lr', type=float, metavar='', required=True, help='Learning Rate')
+parser.add_argument('-l', '--lr', type=float, metavar='learning_rate', required=True, help='Learning Rate')
 
-parser.add_argument('-b', '--batchsize', type=int, metavar='', required=True, help='Batch size')
+parser.add_argument('-b', '--batchsize', type=int, metavar='batchsize', required=True, help='Batch size')
 
-parser.add_argument('-e', '--epochs', type=int, metavar='', required=True, help='Epochs')
+parser.add_argument('-e', '--epochs', type=int, metavar='epochs', required=True, help='Epochs')
 
-parser.add_argument('-s', '--save', type=str, metavar='', required=True, help='Save file name')
+parser.add_argument('-s', '--save', type=str, metavar='savename', required=True, help='Save file name')
 
-parser.add_argument('-w', '--weight', type=str, metavar='', required=False, help='Weights file path')
+parser.add_argument('-w', '--weight', type=str, metavar='weightspath', required=False, help='Weights file path')
 
-parser.add_argument('-o', '--optimizer', type=str, metavar='', required=False, help='Optimizer file path')
+parser.add_argument('-o', '--optimizer', type=str, metavar='optimizer path', required=False, help='Optimizer file path')
 
-parser.add_argument('-t', '--train', type=str, metavar='', required=True, help='Path to data train folder')
+parser.add_argument('-t', '--train', type=str, metavar='trainpath', required=True, help='Path to data train folder')
 
-parser.add_argument('-i', '--idevices', type=str, metavar='', required=True, help='Device ids')
+parser.add_argument('-i', '--idevices', type=str, metavar='deviceids', required=True, help='Device ids')
 
 parser.add_argument("network", type=str, nargs=1, help='unet34, dinknet34, dinkducnet34')
 
@@ -50,10 +49,9 @@ for dir in dirs:
     if not os.path.isdir(dir):
         os.mkdir(dir)
 
-available_nets = ("unet", "dinknet", "hdcducnet", "dinkhdcnet")
+available_nets = ("unet", "dinknet", "resnetduchdc", "resnetduc", "dinknethdc")
 
 assert sys.argv[-1].lower() in available_nets
-
 
 SHAPE = (1024,1024)
 ROOT = arguments.train if arguments.train.endswith('/') else arguments.train + '/'
@@ -66,8 +64,17 @@ ids = [int(x) for x in arguments.idevices.split(',')]
 
 torch.cuda.set_device(ids[0])
 
-solver = Optimizer(UNet34 if sys.argv[-1].lower() == 'unet' else DinkNet34 if sys.argv[-1].lower() == 'dinknet' else ResNetDUCHDC if sys.argv[-1].lower() == 'hdcducnet'\
-        else DinkNetHDC, dice_bce_loss, ids, arguments.lr, arguments.optimizer)
+solver = Optimizer(UNet34 if sys.argv[-1].lower() == 'unet' \
+            else DinkNet34 if sys.argv[-1].lower() == 'dinknet' \
+            else ResNetDUCHDC34 if sys.argv[-1].lower() == 'resnetduchdc' \
+            else DinkNetHDC18 if sys.argv[-1].lower() == 'dinknethdc' \
+            else ResNetDUC34 if sys.argv[-1].lower() == 'resnetduc' \
+            else None, \
+            dice_bce_loss, \
+            ids, \
+            arguments.lr, \
+            arguments.optimizer)
+
 if arguments.weight != None:
     solver.load(arguments.weight)
 batchsize = len(ids) * BATCHSIZE_PER_CARD
