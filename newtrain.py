@@ -17,6 +17,7 @@ parser.add_argument('-dv'   '--devices',        type=str,   required=True,  dest
 parser.add_argument('-wt',  '--weights',        type=str,   required=False, dest='weights',     help='path to weights file')
 parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
 parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
+parser.add_argument('-ls',   '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
 parser.add_argument('model', type=str, help='name of model')
 
 args = parser.parse_args()
@@ -48,6 +49,12 @@ if args.augment:
     augment = importlib.import_module('augments.{}'.format(args.augment))
     augment = getattr(augment, 'augment')
 
+criterion = None
+
+if args.loss:
+    criterion = importlib.import_module('loss.{}'.format(args.loss))
+    criterion = getattr(criterion, args.loss)()
+
 # Get Attributes From Modules End
 
 ids = [int(x) for x in args.devices.split(',')]
@@ -62,7 +69,7 @@ trainloader = torch.utils.data.DataLoader(
     shuffle=True,
     num_workers=4)
 
-criterion = nn.BCELoss()
+criterion = nn.BCELoss() if not criterion else criterion
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
 
@@ -71,7 +78,7 @@ for epoch in range(1, args.iterations + 1):
     for i, (inputs, labels) in enumerate(trainloader):
         optimizer.zero_grad()
         outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        loss = 1 - criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
