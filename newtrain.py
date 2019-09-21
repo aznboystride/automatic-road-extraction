@@ -78,12 +78,12 @@ for epoch in range(1, args.iterations + 1):
     for i, (inputs, labels) in enumerate(trainloader):
         optimizer.zero_grad()
         outputs = model(inputs)
-        loss = 1 - criterion(outputs, labels)
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
         running_loss += loss.item()
-        if i % args.stats == 0:
+        if i % args.stats == args.stats-1:
             print('[%d, %5d] loss: %.3f' %
                   (epoch + 1, i + 1, running_loss / args.stats))
             running_loss = 0.0

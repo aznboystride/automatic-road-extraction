@@ -1,2 +1,5 @@
 __pycache__/
 .DS_Store/
+loss/__pycache__/
+networks/__pycache__/
+augments/__pycache__/
