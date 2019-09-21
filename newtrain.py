@@ -57,9 +57,12 @@ if args.loss:
 
 # Get Attributes From Modules End
 
-ids = [int(x) for x in args.devices.split(',')]
+ids = [int(x) for x in args.devices.split(',')] if args.devices else None
 
-# torch.cuda.set_device(ids[0])
+if ids:
+    model = model.cuda()
+    model = torch.nn.DataParallel(model, device_ids=ids)
+    torch.cuda.set_device(ids[0])
 
 dataset = Dataset(augment)
 
