@@ -88,7 +88,7 @@ for epoch in range(1, args.iterations + 1):
         optimizer.step()
 
         running_loss += loss.item()
-        if i % args.stats == args.stats-1:
+        if i % (args.stats-1) == 0:
             print('[%d, %5d] loss: %.3f' %
                   (epoch + 1, i + 1, running_loss / args.stats))
             running_loss = 0.0
