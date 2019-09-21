@@ -1,5 +1,6 @@
 
 import os
+import sys
 import cv2
 import argparse
 import importlib
@@ -13,11 +14,11 @@ parser = argparse.ArgumentParser(description='trainer')
 parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest='lr',          help='learning rate')
 parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
-parser.add_argument('-dv'   '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
+parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-wt',  '--weights',        type=str,   required=False, dest='weights',     help='path to weights file')
 parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
 parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
-parser.add_argument('-ls',   '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
+parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
 parser.add_argument('model', type=str, help='name of model')
 
 args = parser.parse_args()
@@ -69,19 +70,20 @@ dataset = Dataset(augment)
 trainloader = torch.utils.data.DataLoader(
     dataset,
     batch_size=args.batch,
-    shuffle=True,
-    num_workers=4)
+    shuffle=True)
 
 criterion = nn.BCELoss() if not criterion else criterion
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
 
+print('Training start')
+print('Arguments -> {}'.format(' '.join(sys.argv)))
 for epoch in range(1, args.iterations + 1):
     running_loss = 0
     for i, (inputs, labels) in enumerate(trainloader):
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        outputs = model(inputs.cuda())
+        loss = criterion(outputs.cuda(), labels.cuda())
         loss.backward()
         optimizer.step()
 
