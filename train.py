@@ -90,6 +90,5 @@ for epoch in range(1, args.iterations + 1):
         running_loss += loss.item()
         if i % (args.stats-1) == 0:
             print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / args.stats))
-            running_loss = 0.0
+                  (epoch, i + 1, running_loss / (i+1)))
     print('Finished training')
