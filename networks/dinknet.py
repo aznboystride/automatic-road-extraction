@@ -58,9 +58,9 @@ class DecoderBlock(nn.Module):
         x = self.relu3(x)
         return x
 
-class DinkNet34(nn.Module):
+class dinknet(nn.Module):
     def __init__(self, num_classes=1, num_channels=3):
-        super(DinkNet34, self).__init__()
+        super().__init__()
 
         filters = [64, 128, 256, 512]
         resnet = models.resnet34(pretrained=True)
