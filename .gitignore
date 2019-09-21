@@ -3,3 +3,9 @@ __pycache__/
 loss/__pycache__/
 networks/__pycache__/
 augments/__pycache__/
+.conda/
+.cache/
+.bash_history/
+.nv/
+.python_history/
+.empty/
