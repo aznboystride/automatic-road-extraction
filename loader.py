@@ -25,10 +25,11 @@ class Loader:
 
     def tload(self, index):
         index = self.trainlist[index]
-        img = cv2.imread(os.path.join(self.root, '{}_sat.jpg'.format(index)))
+        path = os.path.join(self.root, '{}_sat.jpg'.format(index))
+        img = cv2.imread(path)
 
         img = np.array(img, np.float32).transpose(2,0,1)/255.0
-        return img
+        return path, img
 
     def __len__(self):
         return len(self.trainlist)

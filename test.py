@@ -1,5 +1,6 @@
 import os
 import sys
+import cv2
 import argparse
 import importlib
 import torch
@@ -66,8 +67,9 @@ print('Arguments -> {}'.format(' '.join(sys.argv)))
 model.eval()
 tester = tester(model)
 with torch.no_grad():
-    for i, inputs in enumerate(testloader):
+    for i, (path, inputs) in enumerate(testloader):
         image = tester(inputs)
+        cv2.imwrite('outputs/' + path[0], image)
         if i % (args.stats-1) == 0:
             print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
 # end
