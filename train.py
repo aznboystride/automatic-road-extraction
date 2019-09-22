@@ -80,7 +80,7 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
 
 print('Training start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
-best_loss = 100
+best_loss = len(trainloader) * 100
 for epoch in range(1, args.iterations + 1):
     running_loss = 0
     for i, (inputs, labels) in enumerate(trainloader):
