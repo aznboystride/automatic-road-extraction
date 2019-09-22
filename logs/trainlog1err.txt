@@ -1,18 +1,6 @@
 /opt/conda/lib/python3.7/site-packages/torch/nn/functional.py:1350: UserWarning: nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.
   warnings.warn("nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.")
 Traceback (most recent call last):
-  File "train.py", line 83, in <module>
-    for i, (inputs, labels) in enumerate(trainloader):
-  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/dataloader.py", line 346, in __next__
-    data = self.dataset_fetcher.fetch(index)  # may raise StopIteration
-  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 44, in fetch
-    data = [self.dataset[idx] for idx in possibly_batched_index]
-  File "/opt/conda/lib/python3.7/site-packages/torch/utils/data/_utils/fetch.py", line 44, in <listcomp>
-    data = [self.dataset[idx] for idx in possibly_batched_index]
-  File "train.py", line 33, in __getitem__
-    return self.loader(index)
-  File "/root/automatic-road-extraction/loader.py", line 29, in __call__
-    return self.load(index)
-  File "/root/automatic-road-extraction/loader.py", line 13, in load
-    img = cv2.imread(os.path.join(self.root, '{}_sat.jpg'.format(index)))
-KeyboardInterrupt
+  File "train.py", line 98, in <module>
+    print("new better loss %.3f" % running_loss / len(trainloader))
+TypeError: unsupported operand type(s) for /: 'str' and 'int'

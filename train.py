@@ -95,7 +95,7 @@ for epoch in range(1, args.iterations + 1):
             print('[%d, %5d] loss: %.3f time: %s' %
                     (epoch, i + 1, running_loss / (i+1), datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     if best_loss / len(trainloader) > running_loss / len(trainloader):
-        print("new better loss %.3f" % running_loss / len(trainloader))
+        print("new better loss %.3f" % (running_loss / len(trainloader)))
         best_loss = running_loss
         torch.save(model.state_dict(), "weights/" + args.weights)
 print('Finished training')
