@@ -2,7 +2,8 @@ import os, cv2, numpy as np
 
 class Loader:
 
-    def __init__(self, root, augmentation=None):
+    def __init__(self, root, test=False, augmentation=None):
+        self.test = test
         self.root = root
         self.imagelist = list(filter(lambda x: x.find('sat')!=-1, os.listdir(root)))
         self.trainlist = list(map(lambda x: x[:-8], self.imagelist))
@@ -22,8 +23,18 @@ class Loader:
         mask[mask<=0.5] = 0
         return img, mask
 
+    def tload(self, index):
+        index = self.trainlist[index]
+        img = cv2.imread(os.path.join(self.root, '{}_sat.jpg'.format(index)))
+
+        img = np.array(img, np.float32).transpose(2,0,1)/255.0
+        return img
+
     def __len__(self):
         return len(self.trainlist)
 
     def __call__(self, index):
-        return self.load(index)
+        if test:
+            return self.tload(index)
+        else:
+            return self.load(index)

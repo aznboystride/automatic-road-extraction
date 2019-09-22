@@ -27,9 +27,9 @@ args = parser.parse_args()
 
 class Dataset(data.Dataset):
 
-    def __init__(self, augment=None):
+    def __init__(self, test, augment=None):
         from loader import Loader
-        self.loader = Loader('train', augment)
+        self.loader = Loader('train', test, augment)
 
     def __getitem__(self, index):
         return self.loader(index)
@@ -62,12 +62,11 @@ if args.loss:
 
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
 
-if ids:
-    torch.cuda.set_device(ids[0])
-    model = model.cuda()
-    model = torch.nn.DataParallel(model, device_ids=ids)
+torch.cuda.set_device(ids[0])
+model = model.cuda()
+model = torch.nn.DataParallel(model, device_ids=ids)
 
-dataset = Dataset(augment)
+dataset = Dataset(test=False, augment)
 
 trainloader = torch.utils.data.DataLoader(
     dataset,
