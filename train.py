@@ -63,9 +63,9 @@ if args.loss:
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
 
 if ids:
+    torch.cuda.set_device(ids[0])
     model = model.cuda()
     model = torch.nn.DataParallel(model, device_ids=ids)
-    torch.cuda.set_device(ids[0])
 
 dataset = Dataset(augment)
 
