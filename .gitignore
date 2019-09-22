@@ -9,3 +9,6 @@ augments/__pycache__/
 .nv/
 .python_history/
 .empty/
+networks/.DS_Store
+loss/.DS_Store
+augments/.DS_Store

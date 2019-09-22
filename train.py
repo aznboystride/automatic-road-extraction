@@ -17,7 +17,7 @@ parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest
 parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
-parser.add_argument('-wt',  '--weights',        type=str,   required=False, dest='weights',     help='path to weights file')
+parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
 parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
 parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
@@ -80,6 +80,7 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
 
 print('Training start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
+best_loss = 100
 for epoch in range(1, args.iterations + 1):
     running_loss = 0
     for i, (inputs, labels) in enumerate(trainloader):
@@ -93,4 +94,8 @@ for epoch in range(1, args.iterations + 1):
         if i % (args.stats-1) == 0:
             print('[%d, %5d] loss: %.3f time: %s' %
                     (epoch, i + 1, running_loss / (i+1), datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
-    print('Finished training')
+    if best_loss / len(trainloader) > running_loss / len(trainloader):
+        print("new better loss %.3f" % running_loss / len(trainloader))
+        best_loss = running_loss
+        torch.save(model.state_dict(), "weights/" + args.weights)
+print('Finished training')
