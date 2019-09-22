@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
+from datetime import datetime
+from pytz import timezone
 
 parser = argparse.ArgumentParser(description='trainer')
 
@@ -89,6 +91,6 @@ for epoch in range(1, args.iterations + 1):
 
         running_loss += loss.item()
         if i % (args.stats-1) == 0:
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch, i + 1, running_loss / (i+1)))
+            print('[%d, %5d] loss: %.3f time: %s' %
+                    (epoch, i + 1, running_loss / (i+1), datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     print('Finished training')
