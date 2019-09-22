@@ -29,7 +29,7 @@ class Loader:
         img = cv2.imread(path)
 
         img = np.array(img, np.float32).transpose(2,0,1)/255.0
-        return path, img
+        return os.path.basename(path), img
 
     def __len__(self):
         return len(self.trainlist)
