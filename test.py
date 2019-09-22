@@ -3,6 +3,7 @@ import sys
 import argparse
 import importlib
 import torch
+import torch.utils.data as data
 from datetime import datetime
 from pytz import timezone
 
@@ -20,7 +21,10 @@ class Dataset(data.Dataset):
 
     def __init__(self, test, augment=None):
         from loader import Loader
-        self.loader = Loader('train', test, augment)
+        if not test:
+            self.loader = Loader('train', test, augment)
+        else:
+            self.loader = Loader('test', test, augment)
 
     def __getitem__(self, index):
         return self.loader(index)
@@ -47,13 +51,13 @@ torch.cuda.set_device(ids[0])
 model = model.cuda()
 model = torch.nn.DataParallel(model, device_ids=ids)
 
-model.load_state_dict(torch.load(os.path.join('weights', args.weights)))
+model.load_state_dict(torch.load(os.path.join('weights', args.weights+".pth")))
 
-dataset = Dataset(test=True, None)
+dataset = Dataset(test=True, augment=None)
 
 testloader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=args.batch,
+    batch_size=1,
     shuffle=True)
 
 print('Testing start')
@@ -62,8 +66,8 @@ print('Arguments -> {}'.format(' '.join(sys.argv)))
 model.eval()
 tester = tester(model)
 with torch.no_grad():
-    for i, inputs testloader:
+    for i, inputs in enumerate(testloader):
         image = tester(inputs)
         if i % (args.stats-1) == 0:
-            print('{}/{}\t{}'.format(i+1,len(inputpaths),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
+            print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
 # end

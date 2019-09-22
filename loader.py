@@ -34,7 +34,7 @@ class Loader:
         return len(self.trainlist)
 
     def __call__(self, index):
-        if test:
+        if self.test:
             return self.tload(index)
         else:
             return self.load(index)
