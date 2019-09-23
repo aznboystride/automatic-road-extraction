@@ -66,7 +66,7 @@ torch.cuda.set_device(ids[0])
 model = model.cuda()
 model = torch.nn.DataParallel(model, device_ids=ids)
 
-dataset = Dataset(test=False, augment)
+dataset = Dataset(test=False, augment=augment)
 
 trainloader = torch.utils.data.DataLoader(
     dataset,
