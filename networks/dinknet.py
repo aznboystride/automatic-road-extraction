@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from functools import partial
 
-nonlinearity = partial(F.relu,inplace=True)
+nonlinearity = partial(F.elu,inplace=True)
 
 class Dblock(nn.Module):
     def __init__(self,channel):
@@ -66,7 +66,7 @@ class dinknet(nn.Module):
         resnet = models.resnet34(pretrained=True)
         self.firstconv = resnet.conv1
         self.firstbn = resnet.bn1
-        self.firstrelu = resnet.relu
+        self.firstrelu = nonlinearity
         self.firstmaxpool = resnet.maxpool
         self.encoder1 = resnet.layer1
         self.encoder2 = resnet.layer2
