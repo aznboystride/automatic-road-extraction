@@ -68,7 +68,7 @@ model.eval()
 tester = tester(model, batchsize=args.batch)
 with torch.no_grad():
     for i, (file, inputs) in enumerate(testloader):
-        image = tester(os.path.join('test', file))
+        image = tester(os.path.join('test', file[0].replace('_mask.png', '_sat.jpg')))
         cv2.imwrite('outputs/' + file[0], image)
         if i % (args.stats-1) == 0:
             print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
