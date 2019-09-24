@@ -37,9 +37,8 @@ class dinktta:
 
         return mask3
 
-    def batch2(self, inputs):
-        img = inputs.squeeze(0).cpu().data.numpy()
-        img = np.transpose(img, (1,2,0))
+    def batch2(self, path):
+        img = cv2.imread(path)
         img90 = np.array(np.rot90(img))
         img1 = np.concatenate([img[None],img90[None]])
         img2 = np.array(img1)[:,::-1]
