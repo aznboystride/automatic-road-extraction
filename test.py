@@ -43,7 +43,7 @@ model = importlib.import_module('networks.{}'.format(args.model))
 model = getattr(model, args.model)()
 
 tester = importlib.import_module('testers.{}'.format(args.tester))
-tester = getattr(tester, 'tester')
+tester = getattr(tester, args.tester)
 # Get Attributes From Modules End
 
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
