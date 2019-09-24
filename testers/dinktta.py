@@ -8,15 +8,19 @@ class dinktta:
         self.batch = batchsize
 
     def __call__(self, inputs):
-        mask = self.test_one_img_from_path_2(inputs)
+        mask = self.batch1(inputs) if self.batch == 1 else\
+                self.batch2(inputs) if self.batch == 2 else\
+                self.batch4(inputs) if self.batch == 4 else\
+                self.batch8(inputs)
         mask[mask>4.0] = 255
         mask[mask<=4.0] = 0
         mask = np.concatenate([mask[:,:,None],mask[:,:,None],mask[:,:,None]],axis=2)
-        return mask.astype(np.uint8) 
+        return mask.astype(np.uint8)
 
-    def test_one_img_from_path_1(self, path):
-        img = cv2.imread(path)#.transpose(2,0,1)[None]
-                    
+    def batch1(self, path):
+        img = inputs.squeeze(0).cpu().data.numpy()
+        img = np.transpose(img, (1,2,0))
+
         img90 = np.array(np.rot90(img))
         img1 = np.concatenate([img[None],img90[None]])
         img2 = np.array(img1)[:,::-1]
@@ -33,7 +37,7 @@ class dinktta:
 
         return mask3
 
-    def test_one_img_from_path_2(self, inputs):
+    def batch2(self, inputs):
         img = inputs.squeeze(0).cpu().data.numpy()
         img = np.transpose(img, (1,2,0))
         img90 = np.array(np.rot90(img))
@@ -56,3 +60,61 @@ class dinktta:
         mask3 = mask2[0] + np.rot90(mask2[1])[::-1,::-1]
 
         return mask3
+
+    def batch4(self, path):
+        img = inputs.squeeze(0).cpu().data.numpy()
+        img = np.transpose(img, (1,2,0))
+        img90 = np.array(np.rot90(img))
+        img1 = np.concatenate([img[None],img90[None]])
+        img2 = np.array(img1)[:,::-1]
+        img3 = np.array(img1)[:,:,::-1]
+        img4 = np.array(img2)[:,:,::-1]
+
+        img1 = img1.transpose(0,3,1,2)
+        img2 = img2.transpose(0,3,1,2)
+        img3 = img3.transpose(0,3,1,2)
+        img4 = img4.transpose(0,3,1,2)
+
+        img1 = V(torch.Tensor(np.array(img1, np.float32)/255.0 * 3.2 -1.6).cuda())
+        img2 = V(torch.Tensor(np.array(img2, np.float32)/255.0 * 3.2 -1.6).cuda())
+        img3 = V(torch.Tensor(np.array(img3, np.float32)/255.0 * 3.2 -1.6).cuda())
+        img4 = V(torch.Tensor(np.array(img4, np.float32)/255.0 * 3.2 -1.6).cuda())
+
+        maska = self.net.forward(img1).squeeze().cpu().data.numpy()
+        maskb = self.net.forward(img2).squeeze().cpu().data.numpy()
+        maskc = self.net.forward(img3).squeeze().cpu().data.numpy()
+        maskd = self.net.forward(img4).squeeze().cpu().data.numpy()
+
+        mask1 = maska + maskb[:,::-1] + maskc[:,:,::-1] + maskd[:,::-1,::-1]
+        mask2 = mask1[0] + np.rot90(mask1[1])[::-1,::-1]
+
+        return mask2
+
+    def batch8(self, path):
+        img = inputs.squeeze(0).cpu().data.numpy()
+        img = np.transpose(img, (1,2,0))
+        img90 = np.array(np.rot90(img))
+        img1 = np.concatenate([img[None],img90[None]])
+        img2 = np.array(img1)[:,::-1]
+        img3 = np.array(img1)[:,:,::-1]
+        img4 = np.array(img2)[:,:,::-1]
+
+        img1 = img1.transpose(0,3,1,2)
+        img2 = img2.transpose(0,3,1,2)
+        img3 = img3.transpose(0,3,1,2)
+        img4 = img4.transpose(0,3,1,2)
+
+        img1 = V(torch.Tensor(np.array(img1, np.float32)/255.0 * 3.2 -1.6).cuda())
+        img2 = V(torch.Tensor(np.array(img2, np.float32)/255.0 * 3.2 -1.6).cuda())
+        img3 = V(torch.Tensor(np.array(img3, np.float32)/255.0 * 3.2 -1.6).cuda())
+        img4 = V(torch.Tensor(np.array(img4, np.float32)/255.0 * 3.2 -1.6).cuda())
+
+        maska = self.net.forward(img1).squeeze().cpu().data.numpy()
+        maskb = self.net.forward(img2).squeeze().cpu().data.numpy()
+        maskc = self.net.forward(img3).squeeze().cpu().data.numpy()
+        maskd = self.net.forward(img4).squeeze().cpu().data.numpy()
+
+        mask1 = maska + maskb[:,::-1] + maskc[:,:,::-1] + maskd[:,::-1,::-1]
+        mask2 = mask1[0] + np.rot90(mask1[1])[::-1,::-1]
+
+        return mask2
