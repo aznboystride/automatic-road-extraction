@@ -65,7 +65,7 @@ print('Testing start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
 
 model.eval()
-tester = tester(model)
+tester = tester(model, batchsize=args.batch)
 with torch.no_grad():
     for i, (file, inputs) in enumerate(testloader):
         image = tester(os.path.join('test', file))
