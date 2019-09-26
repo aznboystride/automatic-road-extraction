@@ -43,7 +43,7 @@ model = importlib.import_module('networks.{}'.format(args.model))
 model = getattr(model, args.model)()
 
 tester = importlib.import_module('testers.{}'.format(args.tester))
-tester = getattr(tester, 'tester')
+tester = getattr(tester, args.tester)
 # Get Attributes From Modules End
 
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
@@ -65,10 +65,10 @@ print('Testing start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
 
 model.eval()
-tester = tester(model)
+tester = tester(model, batchsize=args.batch)
 with torch.no_grad():
     for i, (file, inputs) in enumerate(testloader):
-        image = tester(inputs)
+        image = tester(os.path.join('test', file[0].replace('_mask.png', '_sat.jpg')))
         cv2.imwrite('outputs/' + file[0], image)
         if i % (args.stats-1) == 0:
             print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
