@@ -18,6 +18,7 @@ parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
+parser.add_argument('-lw',  '--lweights',       type=str,   required=False, dest='lweights',    help='name of weights file to load')
 parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
 parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
@@ -63,14 +64,18 @@ if args.loss:
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
 
 torch.cuda.set_device(ids[0])
-model = model.cuda()
 model = torch.nn.DataParallel(model, device_ids=ids)
+model.cuda()
+
+if args.lweights:
+    model.load_state_dict(torch.load("weights/{}.pth".format(args.lweights)))
 
 dataset = Dataset(test=False, augment=augment)
 
 trainloader = torch.utils.data.DataLoader(
     dataset,
     batch_size=args.batch,
+    drop_last=True,
     shuffle=True)
 
 criterion = nn.BCELoss() if not criterion else criterion
@@ -84,8 +89,10 @@ for epoch in range(1, args.iterations + 1):
     running_loss = 0
     for i, (inputs, labels) in enumerate(trainloader):
         optimizer.zero_grad()
-        outputs = model(inputs.cuda())
-        loss = criterion(outputs.cuda(), labels.cuda())
+        inputs = inputs.cuda()
+        labels = labels.cuda()
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
 
@@ -96,5 +103,5 @@ for epoch in range(1, args.iterations + 1):
     if best_loss / len(trainloader) > running_loss / len(trainloader):
         print("new better loss %.3f" % (running_loss / len(trainloader)))
         best_loss = running_loss
-        torch.save(model.state_dict(), "weights/" + args.weights)
+        torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
 print('Finished training')
