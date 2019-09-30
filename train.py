@@ -40,6 +40,16 @@ class Dataset(data.Dataset):
 
 args = parser.parse_args()
 
+def update_lr(optimizer):
+    with open('learning_rate', 'r') as f:
+        lr = float(f.read())
+    if lr == args.lr:
+        return
+    print("New learning rate {} -> {}".format(args.lr, lr))
+    args.lr = lr
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
 args.stats = 30 if not args.stats else args.stats
 
 # Get Attributes From Modules
@@ -74,7 +84,7 @@ dataset = Dataset(test=False, augment=augment)
 
 trainloader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=args.batch,
+    batch_size=len(ids)*4,
     drop_last=True,
     shuffle=True)
 
@@ -85,23 +95,39 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
 print('Training start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
 best_loss = len(trainloader) * 100
+batch_multiplier = args.batch / (len(ids)*4)
+with open('learning_rate', 'w+') as f:
+    f.write(str(args.lr))
 for epoch in range(1, args.iterations + 1):
+    update_lr(optimizer)
     running_loss = 0
-    for i, (inputs, labels) in enumerate(trainloader):
-        optimizer.zero_grad()
+    counter = batch_multiplier
+    batchloss = 0
+    batchcount = 0
+    for i, (inputs, labels) in enumerate(trainloader,1):
+        if (len(trainloader) - i + 1) < args.batch:
+            break
         inputs = inputs.cuda()
         labels = labels.cuda()
+        if counter == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            counter = batch_multiplier
+            running_loss += batchloss
+            batchcount += 1
+            if batchcount % args.stats == 0:
+                print('[%d, %5d] loss: %.5f time: %s' %
+                        (epoch, batchcount, running_loss/batchcount, datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
+            batchloss = 0
+            
         outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs, labels) / counter
         loss.backward()
-        optimizer.step()
 
-        running_loss += loss.item()
-        if i % (args.stats-1) == 0:
-            print('[%d, %5d] loss: %.3f time: %s' %
-                    (epoch, i + 1, running_loss / (i+1), datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
-    if best_loss / len(trainloader) > running_loss / len(trainloader):
-        print("new better loss %.3f" % (running_loss / len(trainloader)))
+        batchloss += loss.item()
+        counter -= 1
+    if best_loss / batchcount > running_loss / batchcount:
+        print("new better loss %.5f" % (running_loss / batchcount))
         best_loss = running_loss
         torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
 print('Finished training')
