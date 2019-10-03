@@ -9,6 +9,7 @@ class dice_bce_ssim(nn.Module):
         self.diceloss = diceloss()
 
     def forward(self, outputs, labels):
+        a = 0.8
         bce_ssim = self.bce_ssim(outputs, labels)
         diceloss = self.diceloss(outputs, labels)
         return bce_ssim + diceloss
