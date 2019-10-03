@@ -40,13 +40,14 @@ class Dataset(data.Dataset):
 
 args = parser.parse_args()
 
-def update_lr(optimizer):
+def update_lr(optimizer,net):
     with open('learning_rate', 'r') as f:
         lr = float(f.read())
     if lr == args.lr:
         return
     print("New learning rate {} -> {}".format(args.lr, lr))
     args.lr = lr
+    net.load_state_dict(torch.load("weights/{}.pth".format(args.weights)))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -98,8 +99,10 @@ best_loss = len(trainloader) * 100
 batch_multiplier = args.batch / (len(ids)*4)
 with open('learning_rate', 'w+') as f:
     f.write(str(args.lr))
+
+no_optim = 0
 for epoch in range(1, args.iterations + 1):
-    update_lr(optimizer)
+    update_lr(optimizer, model)
     running_loss = 0
     counter = batch_multiplier
     batchloss = 0
@@ -130,4 +133,15 @@ for epoch in range(1, args.iterations + 1):
         print("new better loss %.5f" % (running_loss / batchcount))
         best_loss = running_loss
         torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
+        no_optim = 0
+    elif no_optim >= 3:
+        with open('learning_rate', 'w+') as f:
+            f.write(str(args.lr/5))
+        update_lr(optimizer, model)
+        no_optim += 1
+    elif no_optim == 7:
+        print('Early stop')
+        break
+    else:
+        no_optim += 1
 print('Finished training')
