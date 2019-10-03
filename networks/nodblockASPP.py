@@ -62,7 +62,7 @@ class DecoderBlock(nn.Module):
         x = self.relu3(x)
         return x
 
-class dinknetASPP(nn.Module):
+class nodblockASPP(nn.Module):
     def __init__(self, num_classes=1, num_channels=3):
         super().__init__()
 
@@ -76,9 +76,19 @@ class dinknetASPP(nn.Module):
         self.encoder2 = resnet.layer2
         self.encoder3 = resnet.layer3
         self.encoder4 = resnet.layer4
-        self.ASPP     = getModule('ASPP')
 
-        self.dblock = Dblock(512)
+        self.center = nn.Sequential(
+              nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
+              nn.BatchNorm2d(512),
+              #nn.LeakyReLU(0.1),
+              nn.ELU(),
+              nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
+              nn.ELU(),
+              #nn.LeakyReLU(0.1),
+              nn.ELU(),
+            ) 
+        
+        self.ASPP     = getModule('ASPP')
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
         self.decoder3 = DecoderBlock(filters[2], filters[1])
@@ -102,11 +112,11 @@ class dinknetASPP(nn.Module):
         e3 = self.encoder3(e2)
         e4 = self.encoder4(e3)
 
+        # Center
+        e4 = self.center(e4)
+
         # ASPP
         e4 = self.ASPP(e4)
-
-        # Center
-        e4 = self.dblock(e4)
 
         # Decoder
         d4 = self.decoder4(e4) + e3
