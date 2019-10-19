@@ -9,9 +9,9 @@ import cv2
 import numpy as np
 import os
 
-def randomHueSaturationValue(image, hue_shift_limit=(-180, 180),
-                             sat_shift_limit=(-255, 255),
-                             val_shift_limit=(-255, 255), u=0.5):
+def randomHueSaturationValue(image, hue_shift_limit=(-100, 100),
+                             sat_shift_limit=(-100, 100),
+                             val_shift_limit=(-100, 100), u=0.5):
     if np.random.random() < u:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h, s, v = cv2.split(image)
@@ -78,7 +78,6 @@ def randomVerticleFlip(image, mask, u=0.5):
     if np.random.random() < u:
         image = cv2.flip(image, 0)
         mask = cv2.flip(mask, 0)
-
     return image, mask
 
 def randomRotate90(image, mask, u=0.5):
@@ -87,6 +86,20 @@ def randomRotate90(image, mask, u=0.5):
         mask=np.rot90(mask)
 
     return image, mask
+
+def randomRotate(image, mask, u=0.5):
+    if np.random.random() < u:
+        deg = np.random.randint(0,360)
+        image = rotateImage(image, deg)
+        mask = rotateImage(mask, deg)
+    return image, mask
+
+def rotateImage(image, angle):
+    image_center = tuple(np.array(image.shape[1::-1]) / 2)
+    rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+    result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
+    return result
+
 
 def augment(img, mask):
 
@@ -103,5 +116,6 @@ def augment(img, mask):
     img, mask = randomHorizontalFlip(img, mask)
     img, mask = randomVerticleFlip(img, mask)
     img, mask = randomRotate90(img, mask)
+    #img, mask = randomRotate(img, mask)
 
     return img, mask

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.utils.data as data
-from skorch.callbacks import LRScheduler, Checkpoint, EpochScoring
+from skorch.callbacks import LRScheduler, Checkpoint, EpochScoring, ProgressBar
 from skorch.callbacks.lr_scheduler import CyclicLR
 import torch.optim as optim
 
@@ -97,7 +97,9 @@ net = NeuralNet(
     train_split=None,
     callbacks=[ cyclicLR, 
                score,
-               Checkpoint(f_params='best_params.pt')]
+               Checkpoint(f_params='best_params.pt'), ProgressBar()],
+    device='cuda'
 )
 
 net.fit(dataset)
+

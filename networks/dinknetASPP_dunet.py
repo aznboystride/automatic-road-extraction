@@ -62,7 +62,7 @@ class DecoderBlock(nn.Module):
         x = self.relu3(x)
         return x
 
-class dinknetASPP(nn.Module):
+class dinknetASPP_dunet(nn.Module):
     def __init__(self, num_classes=1, num_channels=3):
         super().__init__()
 
@@ -79,6 +79,10 @@ class dinknetASPP(nn.Module):
         self.ASPP     = getModule('ASPP')
 
         self.dblock = Dblock(512)
+
+        self.dilate1 = nn.Conv2d(64, 64, kernel_size=3, dilation=1, padding=1)
+        self.dilate2 = nn.Conv2d(128, 128, kernel_size=3, dilation=2, padding=2)
+        self.dilate4 = nn.Conv2d(256, 256, kernel_size=3, dilation=4, padding=4)
 
         self.decoder4 = DecoderBlock(filters[3], filters[2])
         self.decoder3 = DecoderBlock(filters[2], filters[1])
@@ -109,9 +113,9 @@ class dinknetASPP(nn.Module):
         e4 = self.dblock(e4)
 
         # Decoder
-        d4 = self.decoder4(e4) + e3
-        d3 = self.decoder3(d4) + e2
-        d2 = self.decoder2(d3) + e1
+        d4 = self.decoder4(e4) + self.dilate4(e3)
+        d3 = self.decoder3(d4) + self.dilate2(e2)
+        d2 = self.decoder2(d3) + self.dilate1(e1)
         d1 = self.decoder1(d2)
 
         out = self.finaldeconv1(d1)
