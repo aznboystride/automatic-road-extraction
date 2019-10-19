@@ -93,11 +93,11 @@ def validate(model, trainloader, epoch, l):
         counter -= 1
     if best_miou / batchcount < running_miou / batchcount:
         print("validation -- new better miou %.5f" % (running_miou / batchcount))
+        best_miou = running_miou
     else:
         print("validation -- miou %.5f" % (running_miou / batchcount))
     if best_loss / batchcount > running_loss / batchcount:
-        if best_miou / batchcount > running_miou / batchcount:
-            print("validation -- new better loss %.5f" % (running_loss / batchcount))
+        print("validation -- new better loss %.5f" % (running_loss / batchcount))
         best_loss = running_loss
         torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
         torch.save(optimizer.state_dict(), "optimizers/" + args.weights + ".pth")
