@@ -10,16 +10,30 @@ class ASPP_Enhanced(nn.Module):
 
         self.conv_1x1_1 = nn.Conv2d(512, 256, kernel_size=1)
         self.bn_conv_1x1_1 = nn.BatchNorm2d(256)
+        ################################
+        self.conv_3x3_1_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.bn_conv_3x3_1_1 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=6, dilation=6)
-        self.bn_conv_3x3_1 = nn.BatchNorm2d(256)
+        self.conv_3x3_2_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.bn_conv_3x3_2_1 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=12, dilation=12)
-        self.bn_conv_3x3_2 = nn.BatchNorm2d(256)
+        self.conv_3x3_3_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=8, dilation=8)
+        self.bn_conv_3x3_3_1 = nn.BatchNorm2d(256)
+        #
+        self.conv_3x3_1_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=8, dilation=8)
+        self.bn_conv_3x3_1_2 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_3 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=18, dilation=18)
-        self.bn_conv_3x3_3 = nn.BatchNorm2d(256)
+        self.conv_3x3_2_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.bn_conv_3x3_2_2 = nn.BatchNorm2d(256)
 
+        self.conv_3x3_3_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.bn_conv_3x3_3_2 = nn.BatchNorm2d(256)
+#       #
+        self.seq1 = nn.Sequential(*[self.conv_3x3_1_1, self.bn_conv_3x3_1_1, self.conv_3x3_2_1,
+                                    self.bn_conv_3x3_2_1, self.conv_3x3_3_1, self.bn_conv_3x3_3_1])
+        self.seq2 = nn.Sequential(*[self.conv_3x3_1_2, self.bn_conv_3x3_1_2, self.conv_3x3_2_2,
+                                    self.bn_conv_3x3_2_2, self.conv_3x3_3_2, self.bn_conv_3x3_3_2])
+        ################################
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
 
         self.conv_1x1_2 = nn.Conv2d(512, 256, kernel_size=1)
@@ -37,15 +51,14 @@ class ASPP_Enhanced(nn.Module):
         feature_map_w = feature_map.size()[3] # (== w/16)
 
         out_1x1 = nonlinearity(self.bn_conv_1x1_1(self.conv_1x1_1(feature_map))) # (shape: (batch_size, 256, h/16, w/16))
-        out_3x3_1 = nonlinearity(self.bn_conv_3x3_1(self.conv_3x3_1(feature_map))) # (shape: (batch_size, 256, h/16, w/16))
-        out_3x3_2 = nonlinearity(self.bn_conv_3x3_2(self.conv_3x3_2(feature_map))) # (shape: (batch_size, 256, h/16, w/16))
-        out_3x3_3 = nonlinearity(self.bn_conv_3x3_3(self.conv_3x3_3(feature_map))) # (shape: (batch_size, 256, h/16, w/16))
+        out_3x3_1 = nonlinearity(self.seq1(feature_map)) # (shape: (batch_size, 256, h/16, w/16))
+        out_3x3_2 = nonlinearity(self.seq2(feature_map)) # (shape: (batch_size, 256, h/16, w/16))
 
         out_img = self.avg_pool(feature_map) # (shape: (batch_size, 512, 1, 1))
         out_img = nonlinearity(self.bn_conv_1x1_2(self.conv_1x1_2(out_img))) # (shape: (batch_size, 256, 1, 1))
         out_img = nn.UpsamplingBilinear2d()(out_img, size=(feature_map_h, feature_map_w)) # (shape: (batch_size, 256, h/16, w/16))
 
-        out = torch.cat([out_1x1, out_3x3_1, out_3x3_2, out_3x3_3, out_img], 1) # (shape: (batch_size, 1280, h/16, w/16))
+        out = torch.cat([out_1x1, out_3x3_1, out_3x3_2, out_img], 1) # (shape: (batch_size, 1280, h/16, w/16))
         out = nonlinearity(self.bn_conv_1x1_3(self.conv_1x1_3(out))) # (shape: (batch_size, 256, h/16, w/16))
         out = self.conv_1x1_4(out) # (shape: (batch_size, num_classes, h/16, w/16))
 
