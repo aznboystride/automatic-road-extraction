@@ -26,101 +26,57 @@ parser.add_argument('model', type=str, help='name of model')
 
 args = parser.parse_args()
 
-SMOOTH = 1e-6
+# SMOOTH = 1e-6
 
-def iou_pytorch(outputs, labels):
-    outputs[outputs>=0.5] = 1
-    outputs[outputs<0.5] = 0
-    outputs = outputs.int()
-    labels = labels.int()
-    # You can comment out this line if you are passing tensors of equal shape
-    # But if you are passing output from UNet or something it will most probably
-    # be with the BATCH x 1 x H x W shape
-    outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-    
-    intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
-    union = (outputs | labels).float().sum((1, 2))         # Will be zzero if both are 0
-    
-    iou = (intersection + SMOOTH) / (union + SMOOTH)  # We smooth our devision to avoid 0/0
-    
-    #thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresolds
-    
-    return iou.mean()  # Or thresholded.mean() if you are interested in average across the batch
+# def iou_pytorch(outputs, labels):
+#     outputs[outputs>=0.5] = 1
+#     outputs[outputs<0.5] = 0
+#     outputs = outputs.int()
+#     labels = labels.int()
+#     # You can comment out this line if you are passing tensors of equal shape
+#     # But if you are passing output from UNet or something it will most probably
+#     # be with the BATCH x 1 x H x W shape
+#     outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
+#
+#     intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
+#     union = (outputs | labels).float().sum((1, 2))         # Will be zzero if both are 0
+#
+#     iou = (intersection + SMOOTH) / (union + SMOOTH)  # We smooth our devision to avoid 0/0
+#
+#     #thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresolds
+#
+#     return iou.mean()  # Or thresholded.mean() if you are interested in average across the batch
 
-best_miou = 0
-def validate(model, trainloader, epoch, l):
+def validate(model, trainloader):
     model.eval()
-    global bce
-    global no_optim
     global criterion
-    global best_loss
-    global best_miou
     running_loss = 0
-    running_loss_bce = 0
     counter = batch_multiplier
     batchloss = 0
-    batchloss_bce = 0
     batchcount = 0
-    outputs = 0
-    batchmiou = 0
-    running_miou = 0
-    for i, (inputs, labels) in enumerate(trainloader,1):
+    for i, (inputs, labels) in enumerate(trainloader, 1):
         if (len(trainloader) - i + 1) < args.batch:
             break
         inputs = inputs.cuda()
         labels = labels.cuda()
         if counter == 0:
             counter = batch_multiplier
-            running_miou += batchmiou
             running_loss += batchloss
-            running_loss_bce += batchloss_bce
             batchcount += 1
-            if batchcount % args.stats == 0:
-                print('Validation -- [%d, %5d] %s loss: %.5f time: %s\t %s loss: %.5f\t miou: %.5f\t tloss: %.5f' %
-                        (epoch, batchcount, criterion.__class__.__name__, running_loss/batchcount, datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p"), bce.__class__.__name__, running_loss_bce/batchcount, running_miou/batchcount,l))
             batchloss = 0
-            batchloss_bce = 0
-            batchmiou = 0
 
         outputs = model(inputs)
         loss = criterion(outputs, labels) / batch_multiplier
-
-        loss_bce = bce(outputs, labels) / batch_multiplier
-        batchloss_bce += loss_bce.item()
-
         batchloss += loss.item()
-        batchmiou += iou_pytorch(outputs,labels) / batch_multiplier
         counter -= 1
-    if best_miou / batchcount < running_miou / batchcount:
-        print("validation -- new better miou %.5f" % (running_miou / batchcount))
-        best_miou = running_miou
-    else:
-        print("validation -- miou %.5f" % (running_miou / batchcount))
-    if best_loss / batchcount > running_loss / batchcount:
-        print("validation -- new better loss %.5f" % (running_loss / batchcount))
-        best_loss = running_loss
-        torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
-        torch.save(optimizer.state_dict(), "optimizers/" + args.weights + ".pth")
-        no_optim = 0
-    elif no_optim >= 3:
-        print("validation -- loss %.5f" % (running_loss / batchcount))
-        with open('learning_rate', 'w+') as f:
-            f.write(str(args.lr/5))
-        update_lr(optimizer, model)
-        no_optim += 1
-    elif no_optim == 7:
-        print("validation -- loss %.5f" % (running_loss / batchcount))
-        print('Early stop')
-        #break
-    else:
-        print("validation -- loss %.5f" % (running_loss / batchcount))
-        no_optim += 1
+    print("[*] validation -- loss %.5f" % (running_loss / batchcount))
+
     model.train()
 
 class ValidDataset(data.Dataset):
     def __init__(self):
-        self.iml = list(filter(lambda x : x.find('sat') != -1, os.listdir('valid')))
-        self.trl = list(map(lambda x : x[:-8], self.iml))
+        self.iml = list(filter(lambda x: x.find('sat') != -1, os.listdir('valid')))
+        self.trl = list(map(lambda x: x[:-8], self.iml))
 
     def __getitem__(self, index):
         id = self.trl[index]
@@ -150,16 +106,16 @@ class Dataset(data.Dataset):
 
 args = parser.parse_args()
 
-def update_lr(optimizer,net):
-    with open('learning_rate', 'r') as f:
-        lr = float(f.read())
-    if lr == args.lr:
-        return
-    print("New learning rate {} -> {}".format(args.lr, lr))
-    args.lr = lr
-    net.load_state_dict(torch.load("weights/{}.pth".format(args.weights)))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+# def update_lr(optimizer,net):
+#     with open('learning_rate', 'r') as f:
+#         lr = float(f.read())
+#     if lr == args.lr:
+#         return
+#     print("New learning rate {} -> {}".format(args.lr, lr))
+#     args.lr = lr
+#     net.load_state_dict(torch.load("weights/{}.pth".format(args.weights)))
+#     for param_group in optimizer.param_groups:
+#         param_group['lr'] = lr
 
 args.stats = 30 if not args.stats else args.stats
 
@@ -202,7 +158,7 @@ trainloader = torch.utils.data.DataLoader(
     drop_last=True,
     shuffle=True)
 
-validloader = torch.utils.data.DataLoader(ValidDataset(),batch_size=len(ids)*4,shuffle=True)
+validloader = torch.utils.data.DataLoader(ValidDataset(), batch_size=len(ids)*4, shuffle=True)
 
 criterion = nn.BCELoss() if not criterion else criterion
 
@@ -215,17 +171,14 @@ batch_multiplier = args.batch / (len(ids)*4)
 with open('learning_rate', 'w+') as f:
     f.write(str(args.lr))
 
-
-bce = nn.BCELoss()
 no_optim = 0
 best_train_loss = len(trainloader) * 100
 for epoch in range(1, args.iterations + 1):
-    update_lr(optimizer, model)
     running_loss = 0
     counter = batch_multiplier
     batchloss = 0
     batchcount = 0
-    for i, (inputs, labels) in enumerate(trainloader,1):
+    for i, (inputs, labels) in enumerate(trainloader, 1):
         if (len(trainloader) - i + 1) < args.batch:
             break
         inputs = inputs.cuda()
@@ -236,9 +189,9 @@ for epoch in range(1, args.iterations + 1):
             counter = batch_multiplier
             running_loss += batchloss
             batchcount += 1
-            if batchcount % args.stats == 0:
-                print('training -- [%d, %5d] %s loss: %.5f time: %s' %
-                        (epoch, batchcount, criterion.__class__.__name__, running_loss/batchcount, datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
+            # if batchcount % args.stats == 0:
+            #     print('training -- [%d, %5d] %s loss: %.5f time: %s' %
+            #             (epoch, batchcount, criterion.__class__.__name__, running_loss/batchcount, datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
             batchloss = 0
         counter -= 1
 
@@ -248,10 +201,26 @@ for epoch in range(1, args.iterations + 1):
         batchloss += loss.item()
     
     if running_loss/batchcount < best_train_loss/batchcount:
+        print('[+] training -- new better loss  %.5f -> %.5f ' % (best_train_loss/batchcount, running_loss/batchcount))
         best_train_loss = running_loss
-        print('training -- new better loss %.5f ' % (running_loss/batchcount))
+        torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
+        torch.save(optimizer.state_dict(), "optimizers/" + args.weights + ".pth")
+        no_optim = 0
+    elif no_optim >= 3:
+        print("[-] training -- loss %.5f" % (running_loss / batchcount))
+        model.load_state_dict(torch.load("weights/{}.pth".format(args.weights)))
+        lr = args.lr/5
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+        print("[!] New learning rate %.5f -> %.5f" % (args.lr, lr))
+        args.lr = lr
+        no_optim += 1
+    elif no_optim == 7:
+        print("[-] training -- loss %.5f" % (running_loss / batchcount))
+        print("[!] Early stop")
     else:
-        print('training -- loss %.5f ' % (running_loss/batchcount))
+        print('[-] training -- loss %.5f ' % (running_loss/batchcount))
+        no_optim += 1
 
     with torch.no_grad():
         validate(model,validloader,epoch,running_loss/batchcount)
