@@ -78,7 +78,8 @@ def validate(model, trainloader):
         savepath = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
         torch.save(model.state_dict(), savepath)
     else:
-        print("[*] validation -- loss %.5f" % (running_loss / batchcount))
+        print("[-] validation -- loss %.5f" % (running_loss / batchcount))
+    print()
 
     model.train()
 
