@@ -13,15 +13,16 @@ from pytz import timezone
 
 parser = argparse.ArgumentParser(description='trainer')
 
-parser.add_argument('-lr', '--learning_rate', type=float, required=True, dest='lr', help='learning rate')
-parser.add_argument('-b', '--batch', type=int, required=True, dest='batch', help='batch size')
-parser.add_argument('-it', '--iterations', type=int, required=True, dest='iterations', help='# of iterations')
-parser.add_argument('-dv', '--devices', type=str, required=True, dest='devices', help='gpu indices sep. by comma')
-parser.add_argument('-wt', '--weights', type=str, required=True, dest='weights', help='path to weights file')
-parser.add_argument('-lw', '--lweights', type=str, required=False, dest='lweights', help='name of weights file to load')
-parser.add_argument('-au'   '--augment', type=str, required=False, dest='augment', help='name of augmentation')
-parser.add_argument('-s'    '--stats', type=int, required=False, dest='stats', help='print statistics')
-parser.add_argument('-ls', '--loss', type=str, required=False, dest='loss', help='name of loss')
+parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest='lr',          help='learning rate')
+parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
+parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
+parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
+parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
+parser.add_argument('-lw',  '--lweights',       type=str,   required=False, dest='lweights',    help='name of weights file to load')
+parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
+parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
+parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
+parser.add_argument('-e',   '--epoch',          type=int,   required=False, dest='epoch',       help='epoch start')
 parser.add_argument('model', type=str, help='name of model')
 
 # SMOOTH = 1e-6
@@ -132,6 +133,8 @@ args = parser.parse_args()
 
 args.stats = 30 if not args.stats else args.stats
 
+args.epoch = 1 if not args.epoch else args.epoch
+
 # Get Attributes From Modules
 model = importlib.import_module('networks.{}'.format(args.model))
 
@@ -186,7 +189,9 @@ batch_multiplier = args.batch / (len(ids) * 4)
 
 no_optim = 0
 best_train_loss = len(trainloader) * 100
-for epoch in range(1, args.iterations + 1):
+for epoch in range(args.epoch, args.iterations + args.epoch):
+    print("[+] Epoch ({}/{}) - {}".format(epoch, args.iterations,
+                                          datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     running_loss = 0
     counter = batch_multiplier
     batchloss = 0
@@ -237,7 +242,7 @@ for epoch in range(1, args.iterations + 1):
         no_optim += 1
 
     with torch.no_grad():
-        validate(model, validloader, epoch, running_loss / batchcount)
+        validate(model, validloader)
 
 print('Finished training')
 
