@@ -100,9 +100,9 @@ class aspp_dnet_add(nn.Module):
 
         self.dblock = Dblock(512)
 
-        self.dilate1 = nn.Conv2d(64, 64, kernel_size=3, dilation=1, padding=1)
-        self.dilate2 = nn.Conv2d(128, 128, kernel_size=3, dilation=2, padding=2)
-        self.dilate4 = nn.Conv2d(256, 256, kernel_size=3, dilation=4, padding=4)
+        self.dilate1 = nn.Conv2d(64, 128, kernel_size=3, dilation=1, padding=1)
+        self.dilate2 = nn.Conv2d(128, 256, kernel_size=3, dilation=2, padding=2)
+        self.dilate4 = nn.Conv2d(256, 512, kernel_size=3, dilation=4, padding=4)
 
         # self.decoder4 = DecoderBlock(filters[3], filters[2])
         # self.decoder3 = DecoderBlock(filters[2], filters[1])
@@ -116,12 +116,16 @@ class aspp_dnet_add(nn.Module):
         # self.finalconv3 = nn.Conv2d(32, num_classes, 3, padding=1)
 
         self.conv1 = nn.Conv2d(filters[3], filters[2], 1)
-        self.norm1 = nn.BatchNorm2d(filters[2])
+        self.norm1 = nn.BatchNorm2d(filters[3])
         self.conv2 = nn.Conv2d(filters[2], filters[1], 1)
-        self.norm2 = nn.BatchNorm2d(filters[1])
+        self.norm2 = nn.BatchNorm2d(filters[2])
         self.conv3 = nn.Conv2d(filters[1], filters[0], 1)
-        self.norm3 = nn.BatchNorm2d(filters[0])
+        self.norm3 = nn.BatchNorm2d(filters[1])
         self.conv4 = nn.Conv2d(filters[0], num_classes, 1)
+
+        self.norm1_ = nn.BatchNorm2d(256)
+        self.norm2_ = nn.BatchNorm2d(128)
+        self.norm3_ = nn.BatchNorm2d(64)
 
         self.upsample1 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.upsample2 = nn.UpsamplingBilinear2d(scale_factor=2)
@@ -140,15 +144,15 @@ class aspp_dnet_add(nn.Module):
         e4 = self.encoder4(e3)
 
         # ASPP
-        # e4 = self.ASPP(e4)
+        e4 = self.ASPP(e4)
 
         # Center
         e4 = self.dblock(e4)
 
         # Decoder
-        d4 = nonlinearity(self.norm1(self.conv1(self.upsample1(e4) + nonlinearity(self.norm1(self.dilate4(e3))))))
-        d3 = nonlinearity(self.norm2(self.conv2(self.upsample2(d4) + nonlinearity(self.norm2(self.dilate2(e2))))))
-        d2 = nonlinearity(self.norm3(self.conv3(self.upsample3(d3) + nonlinearity(self.norm3(self.dilate1(e1))))))
+        d4 = nonlinearity(self.norm1_(self.conv1(self.upsample1(e4) + nonlinearity(self.norm1(self.dilate4(e3))))))
+        d3 = nonlinearity(self.norm2_(self.conv2(self.upsample2(d4) + nonlinearity(self.norm2(self.dilate2(e2))))))
+        d2 = nonlinearity(self.norm3_(self.conv3(self.upsample3(d3) + nonlinearity(self.norm3(self.dilate1(e1))))))
         d1 = self.conv4(d2)
         out = self.upsample4(d1)
 

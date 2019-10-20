@@ -82,7 +82,7 @@ class Dblock(nn.Module):
 #         return x
 
 
-class aspp_dnet_add(nn.Module):
+class aspp_dnet_cat(nn.Module):
     def __init__(self, num_classes=1, num_channels=3):
         super().__init__()
 
@@ -140,15 +140,15 @@ class aspp_dnet_add(nn.Module):
         e4 = self.encoder4(e3)
 
         # ASPP
-        # e4 = self.ASPP(e4)
+        e4 = self.ASPP(e4)
 
         # Center
         e4 = self.dblock(e4)
 
         # Decoder
-        d4 = nonlinearity(self.norm1(self.conv1(torch.cat([self.upsample1(e4), nonlinearity(self.norm1(self.dilate4(e3)))]))))
-        d3 = nonlinearity(self.norm2(self.conv2(torch.cat([self.upsample2(d4), nonlinearity(self.norm2(self.dilate2(e2)))]))))
-        d2 = nonlinearity(self.norm3(self.conv3(torch.cat([self.upsample3(d3), nonlinearity(self.norm3(self.dilate1(e1)))]))))
+        d4 = nonlinearity(self.norm1(self.conv1(torch.cat([self.upsample1(e4), nonlinearity(self.norm1(self.dilate4(e3)))], 1))))
+        d3 = nonlinearity(self.norm2(self.conv2(torch.cat([self.upsample2(d4), nonlinearity(self.norm2(self.dilate2(e2)))], 1))))
+        d2 = nonlinearity(self.norm3(self.conv3(torch.cat([self.upsample3(d3), nonlinearity(self.norm3(self.dilate1(e1)))], 1))))
         d1 = self.conv4(d2)
         out = self.upsample4(d1)
 

@@ -15,9 +15,9 @@ def fill_up_weights(up):
 
 class drn_c_26(nn.Module):
     def __init__(self, classes=1,
-                 pretrained=True, use_torch_up=False):
+                 pretrained=True):
         super().__init__()
-        model = fk(pretrained=True)
+        model = fk(pretrained=pretrained)
         self.base = nn.Sequential(*list(model.children())[:-2])
 
         self.seg = nn.Conv2d(model.out_dim, classes,
