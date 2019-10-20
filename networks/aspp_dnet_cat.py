@@ -82,7 +82,7 @@ class Dblock(nn.Module):
 #         return x
 
 
-class aspp_dnet(nn.Module):
+class aspp_dnet_add(nn.Module):
     def __init__(self, num_classes=1, num_channels=3):
         super().__init__()
 
@@ -90,7 +90,7 @@ class aspp_dnet(nn.Module):
         resnet = models.resnet34(pretrained=True)
         self.firstconv = resnet.conv1
         self.firstbn = resnet.bn1
-        self.firstrelu = nonlinearity 
+        self.firstrelu = nonlinearity
         self.firstmaxpool = resnet.maxpool
         self.encoder1 = resnet.layer1
         self.encoder2 = resnet.layer2
@@ -115,11 +115,11 @@ class aspp_dnet(nn.Module):
         # self.finalrelu2 = nonlinearity
         # self.finalconv3 = nn.Conv2d(32, num_classes, 3, padding=1)
 
-        self.conv1 = nn.Conv2d(filters[3], filters[2], 1)
+        self.conv1 = nn.Conv2d(filters[3] + 256, filters[2], 1)
         self.norm1 = nn.BatchNorm2d(filters[2])
-        self.conv2 = nn.Conv2d(filters[2], filters[1], 1)
+        self.conv2 = nn.Conv2d(filters[2] + 128, filters[1], 1)
         self.norm2 = nn.BatchNorm2d(filters[1])
-        self.conv3 = nn.Conv2d(filters[1], filters[0], 1)
+        self.conv3 = nn.Conv2d(filters[1] + 64, filters[0], 1)
         self.norm3 = nn.BatchNorm2d(filters[0])
         self.conv4 = nn.Conv2d(filters[0], num_classes, 1)
 
@@ -146,9 +146,9 @@ class aspp_dnet(nn.Module):
         e4 = self.dblock(e4)
 
         # Decoder
-        d4 = nonlinearity(self.norm1(self.upsample1(nonlinearity(self.norm1(self.conv1(e4)))) + nonlinearity(self.norm1(self.dilate4(e3)))))
-        d3 = nonlinearity(self.norm2(self.upsample2(nonlinearity(self.norm2(self.conv2(d4)))) + nonlinearity(self.norm2(self.dilate2(e2)))))
-        d2 = nonlinearity(self.norm3(self.upsample3(nonlinearity(self.norm3(self.conv3(d3)))) + nonlinearity(self.norm3(self.dilate1(e1)))))
+        d4 = nonlinearity(self.norm1(self.conv1(torch.cat([self.upsample1(e4), nonlinearity(self.norm1(self.dilate4(e3)))]))))
+        d3 = nonlinearity(self.norm2(self.conv2(torch.cat([self.upsample2(d4), nonlinearity(self.norm2(self.dilate2(e2)))]))))
+        d2 = nonlinearity(self.norm3(self.conv3(torch.cat([self.upsample3(d3), nonlinearity(self.norm3(self.dilate1(e1)))]))))
         d1 = self.conv4(d2)
         out = self.upsample4(d1)
 
