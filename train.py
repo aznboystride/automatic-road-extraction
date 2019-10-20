@@ -24,8 +24,6 @@ parser.add_argument('-s'    '--stats',          type=int,   required=False, dest
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
 parser.add_argument('model', type=str, help='name of model')
 
-args = parser.parse_args()
-
 # SMOOTH = 1e-6
 
 # def iou_pytorch(outputs, labels):
@@ -46,6 +44,7 @@ args = parser.parse_args()
 #     #thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresolds
 #
 #     return iou.mean()  # Or thresholded.mean() if you are interested in average across the batch
+
 
 def validate(model, trainloader):
     model.eval()
@@ -73,6 +72,7 @@ def validate(model, trainloader):
 
     model.train()
 
+
 class ValidDataset(data.Dataset):
     def __init__(self):
         self.iml = list(filter(lambda x: x.find('sat') != -1, os.listdir('valid')))
@@ -92,6 +92,7 @@ class ValidDataset(data.Dataset):
     def __len__(self):
         return len(self.iml)
 
+
 class Dataset(data.Dataset):
 
     def __init__(self, test, augment=None):
@@ -103,6 +104,7 @@ class Dataset(data.Dataset):
 
     def __len__(self):
         return len(self.loader)
+
 
 args = parser.parse_args()
 
@@ -168,8 +170,8 @@ print('Training start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
 best_loss = len(trainloader) * 100
 batch_multiplier = args.batch / (len(ids)*4)
-with open('learning_rate', 'w+') as f:
-    f.write(str(args.lr))
+# with open('learning_rate', 'w+') as f:
+#     f.write(str(args.lr))
 
 no_optim = 0
 best_train_loss = len(trainloader) * 100
