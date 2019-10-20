@@ -14,19 +14,19 @@ class ASPP_Enhanced(nn.Module):
         self.conv_3x3_1_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=2, dilation=2)
         self.bn_conv_3x3_1_1 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_2_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.conv_3x3_2_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=4, dilation=4)
         self.bn_conv_3x3_2_1 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_3_1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=8, dilation=8)
+        self.conv_3x3_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=8, dilation=8)
         self.bn_conv_3x3_3_1 = nn.BatchNorm2d(256)
         #
         self.conv_3x3_1_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=8, dilation=8)
         self.bn_conv_3x3_1_2 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_2_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.conv_3x3_2_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=4, dilation=4)
         self.bn_conv_3x3_2_2 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_3_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.conv_3x3_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=2, dilation=2)
         self.bn_conv_3x3_3_2 = nn.BatchNorm2d(256)
 #       #
         self.seq1 = nn.Sequential(*[self.conv_3x3_1_1, self.bn_conv_3x3_1_1, self.conv_3x3_2_1,
@@ -39,7 +39,7 @@ class ASPP_Enhanced(nn.Module):
         self.conv_1x1_2 = nn.Conv2d(512, 256, kernel_size=1)
         self.bn_conv_1x1_2 = nn.BatchNorm2d(256)
 
-        self.conv_1x1_3 = nn.Conv2d(1280, 256, kernel_size=1) # (1280 = 5*256)
+        self.conv_1x1_3 = nn.Conv2d(1280-256, 256, kernel_size=1) # (1280 = 5*256)
         self.bn_conv_1x1_3 = nn.BatchNorm2d(256)
 
         self.conv_1x1_4 = nn.Conv2d(256, num_classes, kernel_size=1)
@@ -56,8 +56,7 @@ class ASPP_Enhanced(nn.Module):
 
         out_img = self.avg_pool(feature_map) # (shape: (batch_size, 512, 1, 1))
         out_img = nonlinearity(self.bn_conv_1x1_2(self.conv_1x1_2(out_img))) # (shape: (batch_size, 256, 1, 1))
-        out_img = nn.UpsamplingBilinear2d()(out_img, size=(feature_map_h, feature_map_w)) # (shape: (batch_size, 256, h/16, w/16))
-
+        out_img = nn.UpsamplingBilinear2d(size=(feature_map_h, feature_map_w))(out_img) # (shape: (batch_size, 256, h/16, w/16))
         out = torch.cat([out_1x1, out_3x3_1, out_3x3_2, out_img], 1) # (shape: (batch_size, 1280, h/16, w/16))
         out = nonlinearity(self.bn_conv_1x1_3(self.conv_1x1_3(out))) # (shape: (batch_size, 256, h/16, w/16))
         out = self.conv_1x1_4(out) # (shape: (batch_size, num_classes, h/16, w/16))
