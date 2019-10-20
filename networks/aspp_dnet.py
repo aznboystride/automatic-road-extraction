@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from functools import partial
 
-nonlinearity = partial(nn.ReLU(), inplace=True)
+nonlinearity = nn.ReLU()
 
 
 def getmodule(module):
@@ -140,18 +140,15 @@ class aspp_dnet(nn.Module):
         e4 = self.encoder4(e3)
 
         # ASPP
-        e4 = self.ASPP(e4)
+        # e4 = self.ASPP(e4)
 
         # Center
         e4 = self.dblock(e4)
 
         # Decoder
-        d4 = nonlinearity(self.norm1(self.conv1(e4))) + nonlinearity(self.norm1(self.dilate4(e3)))
-        d4 = self.upsample1(d4)
-        d3 = nonlinearity(self.norm2(self.conv2(d4))) + nonlinearity(self.norm2(self.dilate2(e2)))
-        d3 = self.upsample2(d3)
-        d2 = nonlinearity(self.norm3(self.conv3(d3))) + nonlinearity(self.norm3(self.dilate1(e1)))
-        d2 = self.upsample3(d2)
+        d4 = nonlinearity(self.norm1(self.upsample1(nonlinearity(self.norm1(self.conv1(e4)))) + nonlinearity(self.norm1(self.dilate4(e3)))))
+        d3 = nonlinearity(self.norm2(self.upsample2(nonlinearity(self.norm2(self.conv2(d4)))) + nonlinearity(self.norm2(self.dilate2(e2)))))
+        d2 = nonlinearity(self.norm3(self.upsample3(nonlinearity(self.norm3(self.conv3(d3)))) + nonlinearity(self.norm3(self.dilate1(e1)))))
         d1 = self.conv4(d2)
         out = self.upsample4(d1)
 
