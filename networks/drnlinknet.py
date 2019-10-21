@@ -123,4 +123,4 @@ class drnlinknet(nn.Module):
         out = self.finalrelu2(out)
         out = self.finalconv3(out)
 
-        return F.sigmoid(out)
+        return nn.Sigmoid()(out)

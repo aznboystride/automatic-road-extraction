@@ -20,13 +20,13 @@ class ASPP_Enhanced(nn.Module):
         self.conv_3x3_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=8, dilation=8)
         self.bn_conv_3x3_3_1 = nn.BatchNorm2d(256)
         #
-        self.conv_3x3_1_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=8, dilation=8)
+        self.conv_3x3_1_2 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=3, dilation=3)
         self.bn_conv_3x3_1_2 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_2_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.conv_3x3_2_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=5, dilation=5)
         self.bn_conv_3x3_2_2 = nn.BatchNorm2d(256)
 
-        self.conv_3x3_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.conv_3x3_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=9, dilation=9)
         self.bn_conv_3x3_3_2 = nn.BatchNorm2d(256)
 #       #
         self.seq1 = nn.Sequential(*[self.conv_3x3_1_1, self.bn_conv_3x3_1_1, self.conv_3x3_2_1,
