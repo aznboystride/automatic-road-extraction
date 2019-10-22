@@ -22,6 +22,7 @@ parser.add_argument('-lw',  '--lweights',       type=str,   required=False, dest
 parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
 parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
+parser.add_argument('-e',   '--epoch',          type=int,   required=False, dest='epoch',       help='epoch start')
 parser.add_argument('model', type=str, help='name of model')
 
 # SMOOTH = 1e-6
@@ -45,10 +46,13 @@ parser.add_argument('model', type=str, help='name of model')
 #
 #     return iou.mean()  # Or thresholded.mean() if you are interested in average across the batch
 
+minValLoss = sys.maxsize
+
 
 def validate(model, trainloader):
     model.eval()
     global criterion
+    global minValLoss
     running_loss = 0
     counter = batch_multiplier
     batchloss = 0
@@ -68,7 +72,15 @@ def validate(model, trainloader):
         loss = criterion(outputs, labels) / batch_multiplier
         batchloss += loss.item()
         counter -= 1
-    print("[*] validation -- loss %.5f" % (running_loss / batchcount))
+
+    if running_loss / batchcount < minValLoss:
+        print('[+] validation -- new better loss  %.5f -> %.5f ' % (minValLoss, running_loss / batchcount))
+        minValLoss = running_loss / batchcount
+        savepath = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
+        torch.save(model.state_dict(), savepath)
+    else:
+        print("[-] validation -- loss %.5f" % (running_loss / batchcount))
+    print()
 
     model.train()
 
@@ -80,13 +92,13 @@ class ValidDataset(data.Dataset):
 
     def __getitem__(self, index):
         id = self.trl[index]
-        img = cv2.imread(os.path.join('valid','{}_sat.jpg').format(id))
+        img = cv2.imread(os.path.join('valid', '{}_sat.jpg').format(id))
         mask = cv2.imread(os.path.join('valid', '{}_mask.png').format(id), cv2.IMREAD_GRAYSCALE)
         mask = np.expand_dims(mask, axis=2)
-        img = np.array(img, np.float32).transpose(2,0,1)/255.0
-        mask = np.array(mask, np.float32).transpose(2,0,1)/255.0
-        mask[mask>=0.5] = 1
-        mask[mask<0.5] = 0
+        img = np.array(img, np.float32).transpose(2, 0, 1) / 255.0
+        mask = np.array(mask, np.float32).transpose(2, 0, 1) / 255.0
+        mask[mask >= 0.5] = 1
+        mask[mask < 0.5] = 0
         return img, mask
 
     def __len__(self):
@@ -120,6 +132,8 @@ args = parser.parse_args()
 #         param_group['lr'] = lr
 
 args.stats = 30 if not args.stats else args.stats
+
+args.epoch = 1 if not args.epoch else args.epoch
 
 # Get Attributes From Modules
 model = importlib.import_module('networks.{}'.format(args.model))
@@ -156,11 +170,11 @@ dataset = Dataset(test=False, augment=augment)
 
 trainloader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=len(ids)*4,
+    batch_size=len(ids) * 4,
     drop_last=True,
     shuffle=True)
 
-validloader = torch.utils.data.DataLoader(ValidDataset(), batch_size=len(ids)*4, shuffle=True)
+validloader = torch.utils.data.DataLoader(ValidDataset(), batch_size=len(ids) * 4, shuffle=True)
 
 criterion = nn.BCELoss() if not criterion else criterion
 
@@ -169,13 +183,15 @@ optimizer = optim.Adam(model.parameters()) if not optimizer else optimizer
 print('Training start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
 best_loss = len(trainloader) * 100
-batch_multiplier = args.batch / (len(ids)*4)
+batch_multiplier = args.batch / (len(ids) * 4)
 # with open('learning_rate', 'w+') as f:
 #     f.write(str(args.lr))
 
 no_optim = 0
 best_train_loss = len(trainloader) * 100
-for epoch in range(1, args.iterations + 1):
+for epoch in range(args.epoch, args.iterations + args.epoch):
+    print("[+] Epoch ({}/{}) - {}".format(epoch, args.iterations + args.epoch,
+                                          datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     running_loss = 0
     counter = batch_multiplier
     batchloss = 0
@@ -201,9 +217,10 @@ for epoch in range(1, args.iterations + 1):
         loss = criterion(outputs, labels) / batch_multiplier
         loss.backward()
         batchloss += loss.item()
-    
-    if running_loss/batchcount < best_train_loss/batchcount:
-        print('[+] training -- new better loss  %.5f -> %.5f ' % (best_train_loss/batchcount, running_loss/batchcount))
+
+    if running_loss / batchcount < best_train_loss / batchcount:
+        print('[+] training -- new better loss  %.5f -> %.5f ' % (
+        best_train_loss / batchcount, running_loss / batchcount))
         best_train_loss = running_loss
         torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
         torch.save(optimizer.state_dict(), "optimizers/" + args.weights + ".pth")
@@ -211,7 +228,7 @@ for epoch in range(1, args.iterations + 1):
     elif no_optim >= 3:
         print("[-] training -- loss %.5f" % (running_loss / batchcount))
         model.load_state_dict(torch.load("weights/{}.pth".format(args.weights)))
-        lr = args.lr/5
+        lr = args.lr / 5
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
         print("[!] New learning rate %.5f -> %.5f" % (args.lr, lr))
@@ -221,11 +238,11 @@ for epoch in range(1, args.iterations + 1):
         print("[-] training -- loss %.5f" % (running_loss / batchcount))
         print("[!] Early stop")
     else:
-        print('[-] training -- loss %.5f ' % (running_loss/batchcount))
+        print('[-] training -- loss %.5f ' % (running_loss / batchcount))
         no_optim += 1
 
     with torch.no_grad():
-        validate(model,validloader,epoch,running_loss/batchcount)
+        validate(model, validloader)
 
-print('Finished training')
+print('Finished Training')
 
