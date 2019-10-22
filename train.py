@@ -48,11 +48,13 @@ parser.add_argument('model', type=str, help='name of model')
 
 minValLoss = sys.maxsize
 
-
+tries = 0
 def validate(model, trainloader):
     model.eval()
     global criterion
     global minValLoss
+    global no_optim
+    global tries
     running_loss = 0
     counter = batch_multiplier
     batchloss = 0
@@ -75,9 +77,28 @@ def validate(model, trainloader):
 
     if running_loss / batchcount < minValLoss:
         print('[+] validation -- new better loss  %.5f -> %.5f ' % (minValLoss, running_loss / batchcount))
+        old_path = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
+        os.system('rm ' + old_path)
         minValLoss = running_loss / batchcount
         savepath = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
         torch.save(model.state_dict(), savepath)
+        torch.save(optimizer.state_dict(), savepath.replace("weights", "optimizers"))
+        no_optim = 0
+        tries = 0
+    elif no_optim >= 5:
+        print("[-] validation -- loss %.5f" % (running_loss / batchcount))
+        loadpath = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
+        model.load_state_dict(torch.load(loadpath))
+        lr = args.lr / 5
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+        print("[!] New learning rate %.5f -> %.5f" % (args.lr, lr))
+        args.lr = lr
+        no_optim = 0
+        tries += 1
+    elif tries == 7:
+        print("[-] validation -- loss %.5f" % (running_loss / batchcount))
+        print("[!] Early stop")
     else:
         print("[-] validation -- loss %.5f" % (running_loss / batchcount))
     print()
@@ -222,24 +243,10 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
         print('[+] training -- new better loss  %.5f -> %.5f ' % (
         best_train_loss / batchcount, running_loss / batchcount))
         best_train_loss = running_loss
-        torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
-        torch.save(optimizer.state_dict(), "optimizers/" + args.weights + ".pth")
-        no_optim = 0
-    elif no_optim >= 3:
-        print("[-] training -- loss %.5f" % (running_loss / batchcount))
-        model.load_state_dict(torch.load("weights/{}.pth".format(args.weights)))
-        lr = args.lr / 5
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
-        print("[!] New learning rate %.5f -> %.5f" % (args.lr, lr))
-        args.lr = lr
-        no_optim += 1
-    elif no_optim == 7:
-        print("[-] training -- loss %.5f" % (running_loss / batchcount))
-        print("[!] Early stop")
+        # torch.save(model.state_dict(), "weights/" + args.weights + ".pth")
+        # torch.save(optimizer.state_dict(), "optimizers/" + args.weights + ".pth")
     else:
         print('[-] training -- loss %.5f ' % (running_loss / batchcount))
-        no_optim += 1
 
     with torch.no_grad():
         validate(model, validloader)
