@@ -78,7 +78,7 @@ def validate(model, trainloader):
     if running_loss / batchcount < minValLoss:
         print('[+] validation -- new better loss  %.5f -> %.5f ' % (minValLoss, running_loss / batchcount))
         old_path = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
-        os.system('rm ' + old_path)
+        os.system('rm ' + old_path + ' ' + old_path.replace('weights', 'optimizers'))
         minValLoss = running_loss / batchcount
         savepath = 'weights/{}_{}_{:.5f}_val.pth'.format(args.weights, criterion.__class__.__name__, minValLoss)
         torch.save(model.state_dict(), savepath)
