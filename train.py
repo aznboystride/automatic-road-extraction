@@ -101,6 +101,7 @@ def validate(model, trainloader):
         print("[!] Early stop")
     else:
         print("[-] validation -- loss %.5f" % (running_loss / batchcount))
+        no_optim += 1
     print()
 
     model.train()
