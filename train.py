@@ -10,8 +10,8 @@ import torch.optim as optim
 import torch.utils.data as data
 from datetime import datetime
 from pytz import timezone
-from sklearn.metrics import jaccard_similarity_score as jsc
-
+from time import time
+#from sklearn.metrics import jaccard_score as jsc
 
 class ValidDataset(data.Dataset):
     def __init__(self):
@@ -72,14 +72,20 @@ Loss should be bce + ssim.
 minValLoss = float('inf')
 maxValAcc = 0.0
 def iou(outputs, labels):
-    labels = labels.cpu().numpy().reshape(-1)
-    outputs = outputs.cpu().numpy().reshape(-1)
-    return jsc(outputs, labels)
+    outputs = outputs >= 0.5
+    labels = labels >= 0.5
+    acc = 0
+    for out, lab in zip(outputs, labels):
+        intersection = (lab & out).int().sum().float()
+        union = (lab | out).int().sum().float()
+        acc += (intersection/union)
+    return acc / len(outputs) 
 
 def validate():
     global minValLoss
     global maxValAcc
-    model.eval()
+    model.eval() 
+    print("[+] Validating.. - {}".format(datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     running_loss = 0
     running_acc = 0
     counter = batch_multiplier
@@ -100,9 +106,9 @@ def validate():
             batchacc = 0
         
         outputs = model(inputs)
-        loss = criterion(outputs, labels) / batch_multiplier
-        acc = iou(outputs, labels) / batch_multiplier
-        batchloss += loss.item()
+        loss = criterion(outputs, labels).item() / batch_multiplier
+        acc = iou(outputs, labels).item() / batch_multiplier
+        batchloss += loss
         batchacc += acc
         counter -= 1
 
@@ -128,6 +134,8 @@ def validate():
         torch.save(model.state_dict(), savepath)
     else:
         print("[-] validation -- acc %.5f\n" % (running_acc / batchcount))
+
+    model.train()
 
 args = parser.parse_args()
 
@@ -160,10 +168,10 @@ torch.cuda.set_device(ids[0])
 model = torch.nn.DataParallel(model, device_ids=ids)
 model.cuda()
 
-optimizer = None
+optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=1e-4)
 if args.lweights:
     model.load_state_dict(torch.load("weights/{}".format(args.lweights)))
-    optimizer = optim.RMSProp(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=1e-4)
     optimizer.load_state_dict(torch.load("optimizers/{}".format(args.lweights)))
 
 dataset = Dataset(test=False, augment=augment)
@@ -207,14 +215,13 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
             batchloss = 0
             batchacc = 0
         counter -= 1
-
-        outputs = model(inputs)
+        outputs = model(inputs) 
         loss = criterion(outputs, labels) / batch_multiplier
         loss.backward()
         with torch.no_grad():
             acc = iou(outputs, labels)
         batchloss += loss.item()
-        batchacc += acc
+        batchacc += acc.item()
 
     if running_loss / batchcount < minTrainLoss:
         print('[+] train -- new better loss  %.5f -> %.5f\n' % (minTrainLoss, running_loss / batchcount))
