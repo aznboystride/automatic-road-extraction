@@ -79,7 +79,7 @@ def iou(outputs, labels):
         intersection = (lab & out).int().sum().float()
         union = (lab | out).int().sum().float()
         acc += (intersection/union)
-    return acc / len(outputs) 
+    return (acc / len(outputs))
 
 def validate():
     global minValLoss
@@ -113,7 +113,7 @@ def validate():
         counter -= 1
 
     if running_loss / batchcount < minValLoss:
-        print('[+] validation -- new better loss  %.5f -> %.5f\n' % (minValLoss, running_loss / batchcount))
+        print('[+] validation -- new better loss  {:.5f} -> {:.5f}\n'.format(minValLoss, running_loss / batchcount))
         old_path = 'weights/val_loss_{}_{}_{:.5f}.pth'.format(args.model, criterion.__class__.__name__, minValLoss)
         if os.path.exists(old_path):
             os.system('rm ' + old_path)
@@ -121,11 +121,11 @@ def validate():
         savepath = 'weights/val_loss_{}_{}_{:.5f}.pth'.format(args.model, criterion.__class__.__name__, minValLoss)
         torch.save(model.state_dict(), savepath)
     else:
-        print("[-] validation -- loss %.5f\n" % (running_loss / batchcount))
+        print("[-] validation -- loss {:.5f}\n".format(running_loss / batchcount))
 
 
     if running_acc / batchcount > maxValAcc:
-        print('[+] validation -- new better acc  %.5f -> %.5f\n' % (maxValAcc, running_acc / batchcount))
+        print('[+] validation -- new better acc  {:.5f} -> {:.5f}\n'.format(maxValAcc, running_acc / batchcount))
         old_path = 'weights/val_acc_{}_{}_{:.5f}.pth'.format(args.model, "iouscore", maxValAcc)
         if os.path.exists(old_path):
             os.system('rm ' + old_path)
@@ -133,7 +133,7 @@ def validate():
         savepath = 'weights/val_acc_{}_{}_{:.5f}.pth'.format(args.model, "iouscore", maxValAcc)
         torch.save(model.state_dict(), savepath)
     else:
-        print("[-] validation -- acc %.5f\n" % (running_acc / batchcount))
+        print("[-] validation -- acc {:.5f}\n".format(running_acc / batchcount))
 
     model.train()
 
@@ -219,25 +219,26 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
         loss = criterion(outputs, labels) / batch_multiplier
         loss.backward()
         with torch.no_grad():
-            acc = iou(outputs, labels)
+            acc = iou(outputs, labels).item()
         batchloss += loss.item()
-        batchacc += acc.item()
+        batchacc += acc
 
     if running_loss / batchcount < minTrainLoss:
-        print('[+] train -- new better loss  %.5f -> %.5f\n' % (minTrainLoss, running_loss / batchcount))
+        print('[+] train -- new better loss  {:.5f} -> {:.5f}\n'.format(minTrainLoss, running_loss / batchcount))
         old_path = 'weights/train_loss_{}_{}_{:.5f}.pth'.format(args.model, criterion.__class__.__name__, minTrainLoss)
         if os.path.exists(old_path):
             os.system('rm ' + old_path)
+            os.system('rm ' + old_path.replace('weights', 'optimizers'))
         minTrainLoss = running_loss / batchcount
         savepath = 'weights/train_loss_{}_{}_{:.5f}.pth'.format(args.model, criterion.__class__.__name__, minTrainLoss)
         torch.save(model.state_dict(), savepath)
         torch.save(optimizer.state_dict(), savepath.replace("weights", "optimizers"))
     else:
-        print("[-] train -- loss %.5f\n" % (running_loss / batchcount))
+        print("[-] train -- loss {:.5f}\n".format(running_loss / batchcount))
 
 
     if running_acc / batchcount > maxTrainAcc:
-        print('[+] train -- new better acc  %.5f -> %.5f\n' % (maxTrainAcc, running_acc / batchcount))
+        print('[+] train -- new better acc  {:.5f} -> {:.5f}\n'.format(maxTrainAcc, running_acc / batchcount))
         old_path = 'weights/train_acc_{}_{}_{:.5f}.pth'.format(args.model, "iouscore", maxTrainAcc)
         if os.path.exists(old_path):
             os.system('rm ' + old_path)
@@ -245,7 +246,7 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
         savepath = 'weights/train_acc_{}_{}_{:.5f}.pth'.format(args.model, "iouscore", maxTrainAcc)
         torch.save(model.state_dict(), savepath)
     else:
-        print("[-] train -- acc %.5f\n" % (running_acc / batchcount))
+        print("[-] train -- acc {:.5f}\n".format(running_acc / batchcount))
 
     with torch.no_grad():
         validate()
