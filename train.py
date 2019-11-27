@@ -10,7 +10,8 @@ import torch.optim as optim
 import torch.utils.data as data
 from datetime import datetime
 from pytz import timezone
-from time import time
+import math
+#from time import time
 #from sklearn.metrics import jaccard_score as jsc
 
 class ValidDataset(data.Dataset):
@@ -48,19 +49,19 @@ class Dataset(data.Dataset):
 
 parser = argparse.ArgumentParser(description='trainer')
 
-parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest='lr',          help='learning rate')
+parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest='lr',          help='learning rate') 
 parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
 parser.add_argument('-lw',  '--lweights',       type=str,   required=False, dest='lweights',    help='name of weights file to load')
-parser.add_argument('-au'   '--augment',        type=str,   required=False, dest='augment',     help='name of augmentation')
-parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
+parser.add_argument('-au',   '--augment',       type=str,   required=False, dest='augment',     help='name of augmentation')
+parser.add_argument('-s',    '--stats',         type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
 parser.add_argument('-e',   '--epoch',          type=int,   required=False, dest='epoch',       help='epoch start')
 parser.add_argument('model', type=str, help='name of model')
 
-
+SMOOTH = 1e-6
 '''
 What should I save for validation? Best loss and Accuracy.
 Should I save the optimizer? No. Just save best training loss optimizer.
@@ -76,10 +77,15 @@ def iou(outputs, labels):
     labels = labels >= 0.5
     acc = 0
     for out, lab in zip(outputs, labels):
-        intersection = (lab & out).int().sum().float()
-        union = (lab | out).int().sum().float()
+        intersection = (lab & out).int().sum().float().item() + SMOOTH
+        assert not math.isnan(intersection)
+        union = (lab | out).int().sum().float().item() + SMOOTH
+        assert not math.isnan(union)
         acc += (intersection/union)
-    return (acc / len(outputs))
+        assert not math.isnan(acc)
+    ret = acc / len(outputs)
+    assert not math.isnan(ret)
+    return ret
 
 def validate():
     global minValLoss
@@ -107,7 +113,7 @@ def validate():
         
         outputs = model(inputs)
         loss = criterion(outputs, labels).item() / batch_multiplier
-        acc = iou(outputs, labels).item() / batch_multiplier
+        acc = iou(outputs, labels) / batch_multiplier
         batchloss += loss
         batchacc += acc
         counter -= 1
@@ -190,7 +196,7 @@ print('Arguments -> {}'.format(' '.join(sys.argv)))
 batch_multiplier = args.batch / (len(ids) * 4)
 
 minTrainLoss = float('inf')
-maxTrainAcc = 0.0
+maxTrainAcc = 0
 for epoch in range(args.epoch, args.iterations + args.epoch):
     print("[+] Epoch ({}/{}) - {}".format(epoch, args.iterations + args.epoch,
                                           datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
@@ -219,7 +225,7 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
         loss = criterion(outputs, labels) / batch_multiplier
         loss.backward()
         with torch.no_grad():
-            acc = iou(outputs, labels).item()
+            acc = iou(outputs, labels) / batch_multiplier
         batchloss += loss.item()
         batchacc += acc
 
@@ -236,7 +242,10 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
     else:
         print("[-] train -- loss {:.5f}\n".format(running_loss / batchcount))
 
-
+    assert not math.isnan(maxTrainAcc)
+    assert not math.isnan(running_acc)
+    assert not math.isnan(batchcount)
+    assert not math.isnan(running_acc/batchcount)
     if running_acc / batchcount > maxTrainAcc:
         print('[+] train -- new better acc  {:.5f} -> {:.5f}\n'.format(maxTrainAcc, running_acc / batchcount))
         old_path = 'weights/train_acc_{}_{}_{:.5f}.pth'.format(args.model, "iouscore", maxTrainAcc)
