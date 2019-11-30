@@ -53,18 +53,17 @@ parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest
 parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
-parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
 parser.add_argument('-lw',  '--lweights',       type=str,   required=False, dest='lweights',    help='name of weights file to load')
 parser.add_argument('-au',   '--augment',       type=str,   required=False, dest='augment',     help='name of augmentation')
-parser.add_argument('-s',    '--stats',         type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
-parser.add_argument('-e',   '--epoch',          type=int,   required=False, dest='epoch',       help='epoch start')
+parser.add_argument('-e',   '--epoch',          type=int,   required=False, dest='epoch',       help='epoch to start')
 parser.add_argument('model', type=str, help='name of model')
 
+MAX_BATCH_PER_CARD = 4
 SMOOTH = 1e-6
 '''
 What should I save for validation? Best loss and Accuracy.
-Should I save the optimizer? No. Just save best training loss optimizer.
+Should I save the optimizer? Just save best training loss optimizer.
 What should I name the validation weights? val_loss_<modelname>_<criterion>_<loss>.pth
 Name validation and accuracy base on criterion used / model and quantity.
 Loss should be bce + ssim.
@@ -78,13 +77,9 @@ def iou(outputs, labels):
     acc = 0
     for out, lab in zip(outputs, labels):
         intersection = (lab & out).int().sum().float().item() + SMOOTH
-        assert not math.isnan(intersection)
         union = (lab | out).int().sum().float().item() + SMOOTH
-        assert not math.isnan(union)
         acc += (intersection/union)
-        assert not math.isnan(acc)
     ret = acc / len(outputs)
-    assert not math.isnan(ret)
     return ret
 
 def validate():
@@ -184,7 +179,7 @@ dataset = Dataset(test=False, augment=augment)
 
 trainloader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=len(ids) * 4,
+    batch_size=len(ids) * MAX_BATCH_PER_CARD,
     shuffle=True)
 
 validloader = torch.utils.data.DataLoader(ValidDataset(), batch_size=len(ids) * 4, shuffle=True)
@@ -193,7 +188,7 @@ criterion = nn.BCELoss() if not criterion else criterion
 
 print('Training start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
-batch_multiplier = args.batch / (len(ids) * 4)
+batch_multiplier = args.batch / (len(ids) * MAX_BATCH_PER_CARD)
 
 minTrainLoss = float('inf')
 maxTrainAcc = 0
