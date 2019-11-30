@@ -54,9 +54,9 @@ parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-lw',  '--lweights',       type=str,   required=False, dest='lweights',    help='name of weights file to load')
-parser.add_argument('-au',   '--augment',       type=str,   required=False, dest='augment',     help='name of augmentation')
 parser.add_argument('-ls',  '--loss',           type=str,   required=False, dest='loss',        help='name of loss')
 parser.add_argument('-e',   '--epoch',          type=int,   required=False, dest='epoch',       help='epoch to start')
+parser.add_argument('-au',   '--augment',       action='store_true',        dest='augment',     help='Whether to do training augmentation')
 parser.add_argument('model', type=str, help='name of model')
 
 MAX_BATCH_PER_CARD = 4
@@ -150,7 +150,7 @@ model = getattr(model, args.model)()
 augment = None
 
 if args.augment:
-    augment = importlib.import_module('augments.{}'.format(args.augment))
+    augment = importlib.import_module('augments.{}'.format('dinkaugment'))
     augment = getattr(augment, 'augment')
 
 criterion = None
