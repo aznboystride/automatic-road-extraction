@@ -33,4 +33,4 @@ usage: train.py [-h] -lr LR -b BATCH -it ITERATIONS -dv DEVICES [-lw LWEIGHTS]
 
 ### Example
 
-`python train.py -ls BCESSIM -lr 1e-4 -b 16 -it 200 -dv 0,1,2,3 -au DilatedDense`
+`python train.py -ls BCESSIM -lr 1e-4 -b 16 -it 200 -dv 2 -au DilatedDense`
