@@ -140,8 +140,6 @@ def validate():
 
 args = parser.parse_args()
 
-args.stats = 30 if not args.stats else args.stats
-
 args.epoch = 1 if not args.epoch else args.epoch
 
 # Get Attributes From Modules
