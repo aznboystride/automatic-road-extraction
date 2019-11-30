@@ -4,7 +4,7 @@ On going research project that aims to automatically segment roads from high res
 
 ## Getting Started
 
-Getting started............?
+Describe how to get started.
 
 ### Installing
 
