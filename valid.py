@@ -13,19 +13,20 @@ parser = argparse.ArgumentParser(description='tester')
 
 parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
-parser.add_argument('-ts'   '--tester',         type=str,   required=True,  dest='tester',      help='name of tester')
+parser.add_argument('-ts',  '--tester',         type=str,   required=True,  dest='tester',      help='name of tester')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
-parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
+parser.add_argument('-s',   '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('model', type=str, help='name of model')
 
 def iou(om, filename):
     import numpy as np
     vpath = os.path.join("valid", filename.replace("_sat.jpg", "_mask.png")) # Gives us valid/id_mask.png ( True Mask )
-
-    vm = cv2.imread(vpath, cv2.IMREAD_GRAYSCALE) # Reads valid/true_mask.png as grey scale
-    om = cv2.cvtColor(om, cv2.COLOR_RGB2GRAY) # Convert RGB Numpy Output To GreyScale
+    vm = cv2.imread(vpath, cv2.IMREAD_GRAYSCALE)/255.0 # Reads valid/true_mask.png as grey scale
+    om = cv2.cvtColor(om, cv2.COLOR_RGB2GRAY)/255.0 # Convert RGB Numpy Output To GreyScale
+    vm = vm.flatten()
+    om = om.flatten()
     intersection = np.sum(om*vm) # Intersection of all 1
-    union = np.sum(om + vm) # Union of all 1
+    union = np.sum(om + vm) - intersection # Union of all 1
 
     return intersection / union
 
@@ -36,7 +37,7 @@ class Dataset(data.Dataset):
         if not test:
             self.loader = Loader('train', test, augment)
         else:
-            self.loader = Loader('test', test, augment)
+            self.loader = Loader('valid', test, augment)
 
     def __getitem__(self, index):
         return self.loader(index)
@@ -63,9 +64,9 @@ torch.cuda.set_device(ids[0])
 model = model.cuda()
 model = torch.nn.DataParallel(model, device_ids=ids)
 
-model.load_state_dict(torch.load(os.path.join('weights', args.weights+".pth")))
+model.load_state_dict(torch.load(os.path.join('weights', args.weights+".pth"), map_location={'cuda:2': 'cuda:0', 'cuda:3':'cuda:0'}))
 
-dataset = Dataset(test=False, augment=None)
+dataset = Dataset(test=True, augment=None)
 
 testloader = torch.utils.data.DataLoader(
     dataset,
@@ -86,4 +87,4 @@ with torch.no_grad():
         miou += m
         if i % (args.stats-1) == 0:
             print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
-    print("MIOU: %.5f" % (miou / len(testloader)))
+    print("%s MIOU: %.5f" % (args.tester, miou / len(testloader)))

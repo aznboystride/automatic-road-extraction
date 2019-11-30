@@ -4,7 +4,7 @@ import torch
 import os
 
 
-class dinktta:
+class dinktta_ds:
     def __init__(self, net, batchsize=1):
         self.net = net
         self.batch = batchsize
@@ -108,10 +108,25 @@ class dinktta:
         img3 = V(torch.Tensor(np.array(img3, np.float32)/255.0).cuda())
         img4 = V(torch.Tensor(np.array(img4, np.float32)/255.0).cuda())
 
-        maska = self.net.forward(img1).squeeze().cpu().data.numpy()
-        maskb = self.net.forward(img2).squeeze().cpu().data.numpy()
-        maskc = self.net.forward(img3).squeeze().cpu().data.numpy()
-        maskd = self.net.forward(img4).squeeze().cpu().data.numpy()
+        o1 = self.net.forward(img1) 
+        o2 = self.net.forward(img2)
+        o3 = self.net.forward(img3)
+        o4 = self.net.forward(img4)
+
+        maska = (o1[0]).squeeze().cpu().data.numpy()
+        maskb = (o2[0]).squeeze().cpu().data.numpy()
+        maskc = (o3[0]).squeeze().cpu().data.numpy()
+        maskd = (o4[0]).squeeze().cpu().data.numpy()
+
+        '''maska = ((o1[0]+o1[1]+o1[2]+o1[3]+o1[4])/5).squeeze().cpu().data.numpy()
+        maskb = ((o2[0]+o2[1]+o2[2]+o2[3]+o2[4])/5).squeeze().cpu().data.numpy()
+        maskc = ((o3[0]+o3[1]+o3[2]+o3[3]+o3[4])/5).squeeze().cpu().data.numpy()
+        maskd = ((o4[0]+o4[1]+o4[2]+o4[3]+o4[4])/5).squeeze().cpu().data.numpy()'''
+
+        '''maska = ((o1[0]+o1[1]+o1[2]+o1[3])/4).squeeze().cpu().data.numpy()
+        maskb = ((o2[0]+o2[1]+o2[2]+o2[3])/4).squeeze().cpu().data.numpy()
+        maskc = ((o3[0]+o3[1]+o3[2]+o3[3])/4).squeeze().cpu().data.numpy()
+        maskd = ((o4[0]+o4[1]+o4[2]+o4[3])/4).squeeze().cpu().data.numpy()'''
 
         mask1 = maska + maskb[:,::-1] + maskc[:,:,::-1] + maskd[:,::-1,::-1]
         mask2 = mask1[0] + np.rot90(mask1[1])[::-1,::-1]
