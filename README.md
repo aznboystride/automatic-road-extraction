@@ -4,7 +4,7 @@ On going research project that aims to automatically segment roads from high res
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for testing and training purposes.
+Getting started............?
 
 ### Installing
 
