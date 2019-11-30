@@ -19,7 +19,7 @@ ction/train .
 
 ## Adding a custom model
 
-To add a model, navigate to `networks/` directory and create `<model_classname>.py`, where `model_classname` is the name of the model.
+To add a model, navigate to `networks/` directory and create `<model_classname>.py`, where `model_classname` is the class of the model.
 
 ## Running train.py
 
