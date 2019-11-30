@@ -17,6 +17,14 @@ cp -r /home/ml_csulb_gmail_com/automatic-road-extraction/valid /home/ml_csulb_gm
 ction/train .
 ```
 
+## Adding a custom model
+
+To add a model, navigate to `networks/` directory and create `<model_classname>.py`, where `model_classname` is the name of the model.
+
 ## Running train.py
 
 Run `python train.py` to see the parameters required.
+
+### Example
+
+`python train.py `
