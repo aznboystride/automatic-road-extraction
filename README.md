@@ -27,7 +27,7 @@ Run `python train.py` to see the parameters required.
 
 ```
 usage: train.py [-h] -lr LR -b BATCH -it ITERATIONS -dv DEVICES [-lw LWEIGHTS]
-                [-au AUGMENT] [-ls LOSS] [-e EPOCH]
+                [-ls LOSS] [-e EPOCH] [-au]
                 model
 ```
 
