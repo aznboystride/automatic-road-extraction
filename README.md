@@ -25,6 +25,12 @@ To add a model, navigate to `networks/` directory and create `<model_classname>.
 
 Run `python train.py` to see the parameters required.
 
+```
+usage: train.py [-h] -lr LR -b BATCH -it ITERATIONS -dv DEVICES [-lw LWEIGHTS]
+                [-au AUGMENT] [-ls LOSS] [-e EPOCH]
+                model
+```
+
 ### Example
 
-`python train.py `
+`python train.py -ls BCESSIM -lr 1e-4 -b 16 -it 200 -dv 2 -au DilatedDense`
