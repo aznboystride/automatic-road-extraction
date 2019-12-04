@@ -68,7 +68,7 @@ torch.cuda.set_device(ids[0])
 model = model.cuda()
 model = torch.nn.DataParallel(model, device_ids=ids)
 
-model.load_state_dict(torch.load(os.path.join('weights', args.weights+".pth"), map_location={'cuda:2': 'cuda:0', 'cuda:3':'cuda:0'}))
+model.load_state_dict(torch.load(os.path.join('weights', args.weights), map_location={'cuda:2': 'cuda:0', 'cuda:3':'cuda:0'}))
 
 dataset = Dataset(test=True, augment=None)
 
