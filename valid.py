@@ -82,7 +82,7 @@ print('Testing start')
 print('Arguments -> {}'.format(' '.join(sys.argv)))
 
 model.eval()
-tester = tester(model, batchsize=args.batch)
+tester = tester(model, batchsize=8)
 
 with torch.no_grad():
     miou = 0
