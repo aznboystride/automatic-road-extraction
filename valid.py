@@ -12,7 +12,6 @@ from pytz import timezone
 
 parser = argparse.ArgumentParser(description='tester')
 
-parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
 parser.add_argument('-ts',  '--tester',         type=str,   required=True,  dest='tester',      help='name of tester')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
