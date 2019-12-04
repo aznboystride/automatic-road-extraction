@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import numpy as np
 import argparse
 import importlib
 import torch
@@ -18,16 +19,20 @@ parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest
 parser.add_argument('-s',   '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('model', type=str, help='name of model')
 
-def iou(om, filename):
-    import numpy as np
-    vpath = os.path.join("valid", filename.replace("_sat.jpg", "_mask.png")) # Gives us valid/id_mask.png ( True Mask )
-    vm = cv2.imread(vpath, cv2.IMREAD_GRAYSCALE)/255.0 # Reads valid/true_mask.png as grey scale
-    om = cv2.cvtColor(om, cv2.COLOR_RGB2GRAY)/255.0 # Convert RGB Numpy Output To GreyScale
-    vm = vm.flatten()
-    om = om.flatten()
-    intersection = np.sum(om*vm) # Intersection of all 1
-    union = np.sum(om + vm) - intersection # Union of all 1
 
+labelDir = 'test'
+def iou(outputImage, filename):
+    labelFilePath = os.path.join(labelDir, filename.replace("_sat.jpg", "_mask.png")) # Gives us labelDir/id_mask.png ( True Mask )
+    labelImage = cv2.imread(labelFilePath, cv2.IMREAD_GRAYSCALE)/255.0 # Reads labelDir/true_mask.png as grey scale
+    outputImage = cv2.cvtColor(outputImage, cv2.COLOR_BGR2GRAY)/255.0 # Convert RGB Numpy Output To GreyScale
+    # Convert to Tensor
+    labelImage = torch.from_numpy(labelImage)
+    outputImage = torch.from_numpy(outputImage)
+    # Thresh hold
+    labelImage = labelImage >= 0.5
+    outputImage = outputImage >= 0.5
+    intersection = (labelImage & outputImage).int().sum().float().item()
+    union = (labelImage | outputImage).int().sum().float().item()
     return intersection / union
 
 class Dataset(data.Dataset):
@@ -37,7 +42,7 @@ class Dataset(data.Dataset):
         if not test:
             self.loader = Loader('train', test, augment)
         else:
-            self.loader = Loader('valid', test, augment)
+            self.loader = Loader('labelDir', test, augment)
 
     def __getitem__(self, index):
         return self.loader(index)
@@ -82,7 +87,7 @@ tester = tester(model, batchsize=args.batch)
 with torch.no_grad():
     miou = 0
     for i, (file, inputs) in enumerate(testloader):
-        image = tester(os.path.join('valid', file[0].replace('_mask.png', '_sat.jpg'))) # RGB Numpy Output
+        image = tester(os.path.join('labelDir', file[0].replace('_mask.png', '_sat.jpg'))) # RGB Numpy Output
         m = iou(image, file[0])
         miou += m
         if i % (args.stats-1) == 0:
