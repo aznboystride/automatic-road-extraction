@@ -41,7 +41,7 @@ class Dataset(data.Dataset):
         if not test:
             self.loader = Loader('train', test, augment)
         else:
-            self.loader = Loader('labelDir', test, augment)
+            self.loader = Loader(labelDir, test, augment)
 
     def __getitem__(self, index):
         return self.loader(index)
@@ -86,7 +86,7 @@ tester = tester(model, batchsize=8)
 with torch.no_grad():
     miou = 0
     for i, (file, inputs) in enumerate(testloader):
-        image = tester(os.path.join('labelDir', file[0].replace('_mask.png', '_sat.jpg'))) # RGB Numpy Output
+        image = tester(os.path.join(labelDir, file[0].replace('_mask.png', '_sat.jpg'))) # RGB Numpy Output
         m = iou(image, file[0])
         miou += m
         if i % (args.stats-1) == 0:
