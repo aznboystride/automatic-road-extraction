@@ -147,7 +147,7 @@ with torch.no_grad():
     for i, (file, inputs) in enumerate(testloader):
         image = tester(os.path.join(labelDir, file[0].replace('_mask.png', '_sat.jpg'))) # RGB Numpy Output
         _precision  = precision(image, file[0])
-        _recall     = recall(image, file[0]))
+        _recall     = recall(image, file[0])
         _iou        = iou(image, file[0])
         _f1         = f1(image, file[0])
 
