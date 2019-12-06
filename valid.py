@@ -53,7 +53,6 @@ def f1(outputImage, filename):
     FN = (labelRoad & outputBackground).int().sum().float().item()
     return 2 * TP / (2 * TP + FN + FP)
 
-metric = f1 if args.f1score else iou
 
 class Dataset(data.Dataset):
 
@@ -73,6 +72,8 @@ class Dataset(data.Dataset):
 args = parser.parse_args()
 
 args.stats = 30 if not args.stats else args.stats
+
+metric = f1 if args.f1score else iou
 
 # Get Attributes From Modules
 model = importlib.import_module('networks.{}'.format(args.model))
