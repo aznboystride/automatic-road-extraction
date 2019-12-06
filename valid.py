@@ -18,6 +18,8 @@ parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest
 parser.add_argument('-s',   '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('model', type=str, help='name of model')
 
+SMOOTH = 1e-6
+
 labelDir = 'test'
 def iou(outputImage, filename):
     labelFilePath = os.path.join(labelDir, filename.replace("_sat.jpg", "_mask.png")) # Gives us labelDir/id_mask.png ( True Mask )
@@ -31,7 +33,7 @@ def iou(outputImage, filename):
     outputImage = outputImage >= 0.5
     intersection = (labelImage & outputImage).int().sum().float().item()
     union = (labelImage | outputImage).int().sum().float().item()
-    return intersection / union
+    return (intersection + SMOOTH) / (union + SMOOTH)
 
 def f1(outputImage, filename):
     labelFilePath = os.path.join(labelDir, filename.replace("_sat.jpg", "_mask.png")) # Gives us labelDir/id_mask.png ( True Mask )
@@ -50,7 +52,7 @@ def f1(outputImage, filename):
     TP = (labelRoad & outputRoad).int().sum().float().item()
     FP = (labelBackground & outputRoad).int().sum().float().item()
     FN = (labelRoad & outputBackground).int().sum().float().item()
-    return 2 * TP / (2 * TP + FN + FP)
+    return (SMOOTH + 2 * TP) / (SMOOTH + 2 * TP + FN + FP)
 
 def recall(outputImage, filename):
     labelFilePath = os.path.join(labelDir, filename.replace("_sat.jpg", "_mask.png")) # Gives us labelDir/id_mask.png ( True Mask )
@@ -69,7 +71,7 @@ def recall(outputImage, filename):
     TP = (labelRoad & outputRoad).int().sum().float().item()
     FP = (labelBackground & outputRoad).int().sum().float().item()
     FN = (labelRoad & outputBackground).int().sum().float().item()
-    return TP / (TP + FN)
+    return (SMOOTH + TP) / (SMOOTH + TP + FN)
 
 def precision(outputImage, filename):
     labelFilePath = os.path.join(labelDir, filename.replace("_sat.jpg", "_mask.png")) # Gives us labelDir/id_mask.png ( True Mask )
@@ -88,7 +90,7 @@ def precision(outputImage, filename):
     TP = (labelRoad & outputRoad).int().sum().float().item()
     FP = (labelBackground & outputRoad).int().sum().float().item()
     FN = (labelRoad & outputBackground).int().sum().float().item()
-    return TP / (TP + FP)
+    return (SMOOTH + TP) / (SMOOTH + TP + FP)
 
 class Dataset(data.Dataset):
 
