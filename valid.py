@@ -16,8 +16,8 @@ parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest
 parser.add_argument('-ts',  '--tester',         type=str,   required=True,  dest='tester',      help='name of tester')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-s',   '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
+parser.add_argument('-f1',   '--f1score',       action='store_true',        dest='f1score',     help='Use f1 scoring?')
 parser.add_argument('model', type=str, help='name of model')
-
 
 labelDir = 'test'
 def iou(outputImage, filename):
@@ -33,6 +33,27 @@ def iou(outputImage, filename):
     intersection = (labelImage & outputImage).int().sum().float().item()
     union = (labelImage | outputImage).int().sum().float().item()
     return intersection / union
+
+def f1(outputImage, filename):
+    labelFilePath = os.path.join(labelDir, filename.replace("_sat.jpg", "_mask.png")) # Gives us labelDir/id_mask.png ( True Mask )
+    labelImage = cv2.imread(labelFilePath, cv2.IMREAD_GRAYSCALE)/255.0 # Reads labelDir/true_mask.png as grey scale
+    outputImage = cv2.cvtColor(outputImage, cv2.COLOR_BGR2GRAY)/255.0 # Convert RGB Numpy Output To GreyScale
+    # Convert to Tensor
+    labelImage = torch.from_numpy(labelImage)
+    outputImage = torch.from_numpy(outputImage)
+    # Thresh hold
+    labelRoad = labelImage >= 0.5
+    outputRoad = outputImage >= 0.5
+
+    labelBackground = labelImage < 0.5
+    outputBackground = outputImage < 0.5
+
+    TP = (labelRoad & outputRoad).int().sum().float().item()
+    FP = (labelBackground & outputRoad).int().sum().float().item()
+    FN = (labelRoad & outputBackground).int().sum().float().item()
+    return 2 * TP / (2 * TP + FN + FP)
+
+metric = f1 if args.f1score else iou
 
 class Dataset(data.Dataset):
 
@@ -87,7 +108,7 @@ with torch.no_grad():
     miou = 0
     for i, (file, inputs) in enumerate(testloader):
         image = tester(os.path.join(labelDir, file[0].replace('_mask.png', '_sat.jpg'))) # RGB Numpy Output
-        m = iou(image, file[0])
+        m = metric(image, file[0])
         miou += m
         if i % (args.stats-1) == 0:
             print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))

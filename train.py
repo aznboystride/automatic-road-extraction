@@ -49,7 +49,7 @@ class Dataset(data.Dataset):
 
 parser = argparse.ArgumentParser(description='trainer')
 
-parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest='lr',          help='learning rate') 
+parser.add_argument('-lr',  '--learning_rate',  type=float, required=True,  dest='lr',          help='learning rate')
 parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-it',  '--iterations',     type=int,   required=True,  dest='iterations',  help='# of iterations')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
@@ -85,7 +85,7 @@ def iou(outputs, labels):
 def validate():
     global minValLoss
     global maxValAcc
-    model.eval() 
+    model.eval()
     print("[+] Validating.. - {}".format(datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
     running_loss = 0
     running_acc = 0
@@ -105,7 +105,7 @@ def validate():
             batchcount += 1
             batchloss = 0
             batchacc = 0
-        
+
         outputs = model(inputs)
         loss = criterion(outputs, labels).item() / batch_multiplier
         acc = iou(outputs, labels) / batch_multiplier
@@ -214,7 +214,7 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
             batchloss = 0
             batchacc = 0
         counter -= 1
-        outputs = model(inputs) 
+        outputs = model(inputs)
         loss = criterion(outputs, labels) / batch_multiplier
         loss.backward()
         with torch.no_grad():
@@ -254,4 +254,3 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
         validate()
 
 print('Finished Training')
-
