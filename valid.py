@@ -13,7 +13,7 @@ from pytz import timezone
 parser = argparse.ArgumentParser(description='tester')
 
 parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
-parser.add_argument('-ts',  '--tester',         type=str,   required=True,  dest='tester',      help='name of tester')
+parser.add_argument('-tta', '--augment',        action='store_true',        dest='tta',         help='Augmentation?')
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-s',   '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('model', type=str, help='name of model')
@@ -116,8 +116,8 @@ model = importlib.import_module('networks.{}'.format(args.model))
 
 model = getattr(model, args.model)()
 
-tester = importlib.import_module('testers.{}'.format(args.tester))
-tester = getattr(tester, args.tester)
+tester = importlib.import_module('testers.{}'.format('dinktta' if args.tta else 'tester'))
+tester = getattr(tester, 'dinktta' if args.tta else 'tester')
 # Get Attributes From Modules End
 
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
@@ -159,7 +159,7 @@ with torch.no_grad():
         mf1         += _f1
         if i % (args.stats-1) == 0:
             print('{}/{}\t{}'.format(i+1,len(testloader),datetime.now(timezone("US/Pacific")).strftime("%m-%d-%Y - %I:%M %p")))
-    print("%s MIOU: %.5f" % (args.tester, miou / len(testloader)))
-    print("%s PRECISION: %.5f" % (args.tester, mprecision / len(testloader)))
-    print("%s RECALL: %.5f" % (args.tester, mrecall / len(testloader)))
-    print("%s F1: %.5f" % (args.tester, mf1 / len(testloader)))
+    print("%s MIOU: %.5f" % ('tta' if args.tta else 'notta', miou / len(testloader)))
+    print("%s PRECISION: %.5f" % ('tta' if args.tta else 'notta', mprecision / len(testloader)))
+    print("%s RECALL: %.5f" % ('tta' if args.tta else 'notta', mrecall / len(testloader)))
+    print("%s F1: %.5f" % ('tta' if args.tta else 'notta', mf1 / len(testloader)))
