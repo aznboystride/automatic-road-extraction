@@ -11,9 +11,9 @@ from pytz import timezone
 
 parser = argparse.ArgumentParser(description='tester')
 
-parser.add_argument('-b',   '--batch',          type=int,   required=True,  dest='batch',       help='batch size')
 parser.add_argument('-wt',  '--weights',        type=str,   required=True,  dest='weights',     help='path to weights file')
-parser.add_argument('-ts'   '--tester',         type=str,   required=True,  dest='tester',      help='name of tester')
+parser.add_argument('-tta', '--test_augmentation', action='store_true', dest='tta', help='Whether to do test time augmentation')
+
 parser.add_argument('-dv',  '--devices',        type=str,   required=True,  dest='devices',     help='gpu indices sep. by comma')
 parser.add_argument('-s'    '--stats',          type=int,   required=False, dest='stats',       help='print statistics')
 parser.add_argument('model', type=str, help='name of model')
@@ -42,8 +42,8 @@ model = importlib.import_module('networks.{}'.format(args.model))
 
 model = getattr(model, args.model)()
 
-tester = importlib.import_module('testers.{}'.format(args.tester))
-tester = getattr(tester, args.tester)
+tester = importlib.import_module('testers.{}'.format('tester' if not args.tta else 'dinktta'))
+tester = getattr(tester, 'tester' if not args.tta else 'dinktta')
 # Get Attributes From Modules End
 
 ids = [int(x) for x in args.devices.split(',')] if args.devices else None
