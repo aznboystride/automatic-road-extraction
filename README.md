@@ -10,11 +10,8 @@ Describe how to get started.
 
 ```
 git clone https://github.com/aznboystride/automatic-road-extraction
-
+cd automatic-road-extraction/
 mkdir weights optimizers # training and testing program will read and write to these folders.
-
-cp -r /home/ml_csulb_gmail_com/automatic-road-extraction/valid /home/ml_csulb_gmail_com/automatic-road-extra
-ction/train . # Copies all the symlinks
 ```
 
 ## Adding a custom model
