@@ -1,3 +1,5 @@
+# This software tests the model on several scoring metrics
+
 import os
 import sys
 import cv2
