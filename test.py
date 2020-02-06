@@ -1,3 +1,4 @@
+# This software outputs the label images
 import os
 import sys
 import cv2
