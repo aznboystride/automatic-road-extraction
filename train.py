@@ -61,13 +61,6 @@ parser.add_argument('model', type=str, help='name of model')
 
 MAX_BATCH_PER_CARD = 4
 SMOOTH = 1e-6
-'''
-What should I save for validation? Best loss and Accuracy.
-Should I save the optimizer? Just save best training loss optimizer.
-What should I name the validation weights? val_loss_<modelname>_<criterion>_<loss>.pth
-Name validation and accuracy base on criterion used / model and quantity.
-Loss should be bce + ssim.
-'''
 
 minValLoss = float('inf')
 maxValAcc = 0.0
