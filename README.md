@@ -1,6 +1,6 @@
 # Automatic Road Extraction Deep Learning
 
-Deep learning experiments for road segmentation from high resolution satellite imagery.
+Deep learning experiments for road extraction from high resolution satellite imagery.
 
 ## Getting Started
 
