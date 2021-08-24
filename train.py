@@ -92,7 +92,7 @@ parser.add_argument('-au',  '--augment',        action='store_true',        dest
 parser.add_argument('-tp',   '--trainpath',     type=str,   required=False, dest='trainpath',   default='train',  help='Train path')
 parser.add_argument('model', type=str, help='name of model')
 
-MAX_BATCH_PER_CARD = 4
+MAX_BATCH_PER_CARD = 1
 SMOOTH = 1e-6
 
 minValLoss = float('inf')
