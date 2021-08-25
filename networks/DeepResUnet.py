@@ -110,6 +110,7 @@ class DeepResUnet(nn.Module):
 
         for i in range(len(self.decoder_residual_block_list)):
             out = self.upsample(out)
+            out = self.decoder_residual_blocks(out)
             out = torch.cat((self.encoder_residual_blocks_list[-1-i], out), 1)
         out = self.finalconv1x1(out)
         out = self.sigmoid(out)
