@@ -73,7 +73,7 @@ class DeepResUnet(nn.Module):
             residual_block = ResidualBlock(in_channels=in_channels, out_channels=out_channels, is_encoder=True, is_first_encoder_block=i == 0)
             encoder_residual_blocks_list.append(residual_block)
             in_channels = out_channels
-        self.encoder_residual_blocks = nn.Sequential(*encoder_residual_blocks_list)
+        # self.encoder_residual_blocks = nn.Sequential(*encoder_residual_blocks_list)
         self.encoder_residual_blocks_list = encoder_residual_blocks_list
 
         # Bridge block
@@ -95,7 +95,7 @@ class DeepResUnet(nn.Module):
             residual_block = ResidualBlock(in_channels=in_channels, out_channels=out_channels, is_encoder=False, is_first_encoder_block=i == 0)
             decoder_residual_block_list.append(residual_block)
             in_channels = out_channels
-        self.decoder_residual_blocks = nn.Sequential(*decoder_residual_block_list)
+        # self.decoder_residual_blocks = nn.Sequential(*decoder_residual_block_list)
         self.decoder_residual_block_list = decoder_residual_block_list
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
         self.sigmoid = nn.Sigmoid()
@@ -104,14 +104,16 @@ class DeepResUnet(nn.Module):
         self.finalconv1x1 = conv1x1(in_channels, 1, stride=1)
 
     def forward(self, x):
+        encoder_residual_block_tensors = []
         out = self.firstconv(x)
-        out = self.encoder_residual_blocks(out)
+        for encoder_residual_block in self.encoder_residual_blocks_list:
+            out = encoder_residual_block(out)
+            encoder_residual_block_tensors.append(out)
         out = self.bridge(out)
 
-        for i in range(len(self.decoder_residual_block_list)):
+        for _ in range(len(self.decoder_residual_block_list)):
             out = self.upsample(out)
-            out = self.decoder_residual_blocks(out)
-            out = torch.cat((self.encoder_residual_blocks_list[-1-i], out), 1)
+            out = torch.cat((encoder_residual_block_tensors.pop(), out), 1)
         out = self.finalconv1x1(out)
         out = self.sigmoid(out)
         return out
@@ -123,8 +125,8 @@ class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, is_encoder=True, is_first_encoder_block=False):
         super().__init__()
 
-        self.bsmall_block = is_first_encoder_block
-        self.bencoder = is_encoder
+        self.is_encoder = is_first_encoder_block
+        self.is_encoder = is_encoder
         if is_encoder:
             if is_first_encoder_block:
                 self.conv1 = conv3x3(in_channels, out_channels, stride=1)
@@ -145,11 +147,12 @@ class ResidualBlock(nn.Module):
         else:
             self.bn1 = nn.BatchNorm2d(in_channels)
             self.relu = nn.ReLU(inplace=True)
-            self.conv1 = conv3x3(in_channels, out_channels, stride=2)
+            self.conv1 = conv3x3(in_channels, out_channels, stride=1)
             self.bn2 = nn.BatchNorm2d(out_channels)
             self.relu = nn.ReLU(inplace=True)
             self.conv2 = conv3x3(out_channels, out_channels)
             self.residual_block = nn.Sequential(self.bn1, self.relu, self.conv1, self.bn2, self.relu, self.conv2)
+            self.downsample = nn.Sequential(conv1x1(in_channels, out_channels, 1), nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
         residual = self.downsample(x)
