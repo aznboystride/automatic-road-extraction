@@ -59,8 +59,10 @@ class Decoder(nn.Module):
 
 
 class DeepResUnet(nn.Module):
-    def __init__(self, init_in_channels=64, num_blocks=5):
+    def __init__(self, init_in_channels=32, num_blocks=5):
         super().__init__()
+
+        self._is_verbose = True
 
         # initial convolution to downsample
         self.firstconv = conv1x1(3, init_in_channels)
@@ -89,33 +91,59 @@ class DeepResUnet(nn.Module):
 
         # Decoder block
         in_channels = out_channels
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
+        decoder_conv1x1_list = []
         decoder_residual_block_list = []
         for i in range(num_blocks):
             out_channels = in_channels // 2
+            decoder_conv1x1 = nn.Sequential(conv1x1(in_channels, out_channels, 1), nn.BatchNorm2d(out_channels))
             residual_block = ResidualBlock(in_channels=in_channels, out_channels=out_channels, is_encoder=False, is_first_encoder_block=i == 0)
+            decoder_conv1x1_list.append(decoder_conv1x1)
             decoder_residual_block_list.append(residual_block)
             in_channels = out_channels
         # self.decoder_residual_blocks = nn.Sequential(*decoder_residual_block_list)
+        self.decoder_conv1x1_list = decoder_conv1x1_list
         self.decoder_residual_block_list = decoder_residual_block_list
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
-        self.sigmoid = nn.Sigmoid()
 
         # final conv
         self.finalconv1x1 = conv1x1(in_channels, 1, stride=1)
 
+        # sigmoid
+        self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
         encoder_residual_block_tensors = []
         out = self.firstconv(x)
-        for encoder_residual_block in self.encoder_residual_blocks_list:
+        if self._is_verbose:
+            print(f"[firstconv], {out.shape}")
+        for i, encoder_residual_block in enumerate(self.encoder_residual_blocks_list):
             out = encoder_residual_block(out)
+            if self._is_verbose:
+                print(f"[encoder block {i+1}], {out.shape}")
             encoder_residual_block_tensors.append(out)
         out = self.bridge(out)
 
-        for _ in range(len(self.decoder_residual_block_list)):
+        if self._is_verbose:
+            print(f"[bridge], {out.shape}")
+        for i in range(len(self.decoder_residual_block_list)):
             out = self.upsample(out)
+            if self._is_verbose:
+                print(f"[upsample {i+1}] {out.shape}")
+            out = self.decoder_conv1x1_list[i](out)
+            if self._is_verbose:
+                print(f"[decoder conv1x1 {i + 1}] {out.shape}")
             out = torch.cat((encoder_residual_block_tensors.pop(), out), 1)
+            if self._is_verbose:
+                print(f"[concat block {i+1}] {out.shape}")
+            out = self.decoder_residual_block_list[i](out)
+            if self._is_verbose:
+                print(f"[decoder block {i+1}] {out.shape}")
         out = self.finalconv1x1(out)
+        if self._is_verbose:
+            print(f"[finalconv1x1] {out.shape}")
         out = self.sigmoid(out)
+        if self._is_verbose:
+            print(f"[sigmoid (output layer)] {out.shape}\n")
         return out
 
 
@@ -155,11 +183,14 @@ class ResidualBlock(nn.Module):
             self.downsample = nn.Sequential(conv1x1(in_channels, out_channels, 1), nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
-        residual = self.downsample(x)
-        out = self.residual_block(x)
-        # print("residual", residual.shape)
         # print("input", x.shape)
+        out = self.residual_block(x)
+
         # print("output", out.shape)
+        residual = self.downsample(x)
+
+        # print("residual", residual.shape)
+
         out += residual
         return out
 
