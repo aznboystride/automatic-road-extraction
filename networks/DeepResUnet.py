@@ -62,13 +62,13 @@ class DeepResUnet(nn.Module):
     def __init__(self, init_in_channels=32, num_blocks=5):
         super().__init__()
 
-        self._is_verbose = True
+        self._is_verbose = False
 
         # initial convolution to downsample
         self.firstconv = conv1x1(3, init_in_channels)
 
         # Encoder block
-        encoder_residual_blocks_list = []
+        encoder_residual_blocks_list = nn.ModuleList()
         in_channels = init_in_channels
         for i in range(num_blocks):
             out_channels = in_channels * 2
@@ -92,8 +92,8 @@ class DeepResUnet(nn.Module):
         # Decoder block
         in_channels = out_channels
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
-        decoder_conv1x1_list = []
-        decoder_residual_block_list = []
+        decoder_conv1x1_list = nn.ModuleList()
+        decoder_residual_block_list = nn.ModuleList()
         for i in range(num_blocks):
             out_channels = in_channels // 2
             decoder_conv1x1 = nn.Sequential(conv1x1(in_channels, out_channels, 1), nn.BatchNorm2d(out_channels))

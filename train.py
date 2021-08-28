@@ -247,15 +247,15 @@ for epoch in range(args.epoch, args.iterations + args.epoch):
             batchloss = 0
             batchacc = 0
         counter -= 1
-        print(f"Calculating outputs...")
+        # print(f"Calculating outputs...")
         start = time.time()
         outputs = model(inputs)
-        print(f"Finished calculating outputs! {time.time()-start:.3f} sec")
+        # print(f"Finished calculating outputs! {time.time()-start:.3f} sec")
         loss = criterion(outputs, labels) / batch_multiplier
-        print(f"back propagating...")
+        # print(f"back propagating...")
         start = time.time()
         loss.backward()
-        print(f"Finished back propagation! {time.time()-start:.3f} sec")
+        # print(f"Finished back propagation! {time.time()-start:.3f} sec")
         with torch.no_grad():
             acc = iou(outputs, labels) / batch_multiplier
         batchloss += loss.item()
